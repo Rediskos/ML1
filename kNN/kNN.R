@@ -22,16 +22,16 @@ distanses <- function(x, y, param = NA, metric = euclid) {
 }
 
 kwNN <- function(x) {
-  q = 0.9;
+  q = 0.6;
   cnt <- c(0, 0, 0)
   names(cnt) <- names(table(x$Species))
   l <- dim(x)[1]
   
   for (i in 1:l) {
-    cnt[x$Species[i]] <- cnt[x$Species[i]] + 1 * (q ^ i)
+    cnt[x$Species[i]] <- cnt[x$Species[i]] + 1 * (q ^ (i - 1))
   }
   
-  return(names(which.max(counts)))
+  return(names(which.max(cnt)))
 }
 
 simpl_kNN <- function(x) {
@@ -39,7 +39,7 @@ simpl_kNN <- function(x) {
   return(names(which.max(tmp)))
 }
 
-kNN <- function(x, y, k, mode = simpl_kNN) {
+kNN <- function(x, y, k, mode = kwNN) {
   #возвращает k ближайших соседей
   
   orderY <- distanses(x, y)
@@ -71,7 +71,6 @@ make_map <- function(colors, classifier = kNN, k = 5) {
 }
 
 
-make_map(colors)
 
 x <- iris[sample(1:150, 10), ]
 x$Species <- NA
@@ -86,10 +85,11 @@ for(i in 1:dim(x)[1]) {
   ans <- c(ans, kNN(x[i,], iris, 5))
 }
 
+str(ans)
+
 x$Species <- ans
-x[,3]
+x
 points(x[,3], x[,4], pch = 22, bg = colors[x$Species],
        col = colors[x$Species])
-
 
 make_map(colors)
