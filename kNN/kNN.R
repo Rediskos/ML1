@@ -1,0 +1,95 @@
+
+euclid <- function(x, y){
+  sqrt(sum((x - y)^2))
+}
+
+distanses <- function(x, y, param = NA, metric = euclid) {
+  l <- dim(y)[1]
+  
+  if(is.na(param)) {
+    param <- c(3:4)
+  }
+  
+  dist <- matrix(NA, l, 2)
+  
+  for(i in 1:l) {
+    a <- c(i, metric(x[param], y[i, param]))
+    dist[i, ] <- a
+  }
+  
+  ordY <- y[order(dist[, 2]), ]
+  return (ordY)
+}
+
+kwNN <- function(x) {
+  q = 0.9;
+  cnt <- c(0, 0, 0)
+  names(cnt) <- names(table(x$Species))
+  l <- dim(x)[1]
+  
+  for (i in 1:l) {
+    cnt[x$Species[i]] <- cnt[x$Species[i]] + 1 * (q ^ i)
+  }
+  
+  return(names(which.max(counts)))
+}
+
+simpl_kNN <- function(x) {
+  tmp <- table(x$Species)
+  return(names(which.max(tmp)))
+}
+
+kNN <- function(x, y, k, mode = simpl_kNN) {
+  #возвращает k ближайших соседей
+  
+  orderY <- distanses(x, y)
+  n <- dim(orderY)[2]
+  return(mode(orderY[1:k, ]))
+}
+
+LOO <- function(x, y, classifier = kNN) {
+  
+}
+
+make_map <- function(colors, classifier = kNN, k = 5) {
+  #
+  plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
+  i = 0
+  j = 0
+  while (i < 10) {
+    while(j < 2.5) {
+     p <- iris[1, ]
+     p[3] = i
+     p[4] = j
+     p$Species <- classifier(p, iris, k)
+     points(p[3], p[4], pch = 22, bg = colors[p$Species], col = colors[p$Species], asp = 1)
+     j <- j + 2/10
+    }
+    i <- i + 2/10
+    j <- 0
+  }
+}
+
+
+make_map(colors)
+
+x <- iris[sample(1:150, 10), ]
+x$Species <- NA
+
+colors <- c("setosa" = "red", "versicolor" = "green3", 
+            "virginica" = "blue") 
+plot(iris[, 3:4], pch = 21, bg = colors[iris$Species], col 
+     = colors[iris$Species], asp = 1)
+
+ans <- vector()
+for(i in 1:dim(x)[1]) {
+  ans <- c(ans, kNN(x[i,], iris, 5))
+}
+
+x$Species <- ans
+x[,3]
+points(x[,3], x[,4], pch = 22, bg = colors[x$Species],
+       col = colors[x$Species])
+
+
+make_map(colors)
