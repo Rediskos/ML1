@@ -9,4 +9,4 @@
 - Объектов какого класса оказалось больше, такой класс и будет присвоен объекту ***T***.
 
 Карта классификации для метода kNN при k = 5
-![Alt text](/ML1/kNN/heatmapk5.png?raw=true "Optional Title")
+![Alt text](heatmapk5.png?raw=true "Optional Title")
