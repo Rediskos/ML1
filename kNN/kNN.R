@@ -21,8 +21,7 @@ distanses <- function(x, y, param = NA, metric = euclid) {
   return (ordY)
 }
 
-kwNN <- function(x) {
-  q = 0.7;
+kwNN <- function(x, q = 0.7) {
   cnt <- c(0, 0, 0)
   names(cnt) <- names(table(x$Species))
   l <- dim(x)[1]
@@ -39,7 +38,7 @@ simpl_kNN <- function(x) {
   return(names(which.max(tmp)))
 }
 
-kNN <- function(x, y, k, mode = simpl_kNN, rall = FALSE) {
+kNN <- function(x, y, k = NA, q = NA, mode = simpl_kNN, rall = FALSE) {
   #возвращает класс
   
   orderY <- distanses(x, y)
@@ -48,11 +47,23 @@ kNN <- function(x, y, k, mode = simpl_kNN, rall = FALSE) {
     return(orderY)
   }
   
-  n <- dim(orderY)[2]
-  return(mode(orderY[1:k, ]))
+  res <- 0
+  if(is.na(q) && !is.na(k) ) {
+    
+  res <- simpl_kNN(orderY[1:k, ])
+  
+  } else if(!is.na(q) && is.na(k)) {
+    res <- kwNN(orderY, q)
+  
+  } else if(!is.na(q) && !is.na(k)) {
+    
+    res <- kwNN(orderY[1:k, ], q)
+  }
+  
+  return(res)
 }
 
-for_plot <- function(x, d){x/d}
+for_plot <- function(x, d){1 - x/d}
 
 LOO <- function(y, classifier = kNN, bounds = 1:150) {
   results <- integer(bounds[which.max(bounds)])
@@ -60,14 +71,14 @@ LOO <- function(y, classifier = kNN, bounds = 1:150) {
   for (z in 1:l) {
     d = y[z, ]
     cat(z)
-    tmp <- classifier(d, iris, l, mode = kwNN, rall = TRUE)
-    for (i in 1:l) {
-      tclass <- kwNN(tmp[1:i,][-1, ])
+    tmp <- classifier(d, iris, l, mode = simpl_kNN, rall = TRUE)
+    for (i in 3:l) {
+      tclass <- simpl_kNN(tmp[1:i,][-1, ])
       results[i] <- results[i] + 1 * (d$Species == tclass)
     }
   }
   print(results)
-  plot(for_plot(results, 150), type = 'l')
+  plot(for_plot(results, 150), type = 'l', xlab = "k", ylab = "miss")
   
   return(which.max(results))
 }
@@ -75,32 +86,71 @@ LOO <- function(y, classifier = kNN, bounds = 1:150) {
 
 best_k <- LOO(iris)
 
-make_map <- function(colors, classifier = kNN, k = 5) {
+
+LOOq <- function(y, bestk, classifier = kNN, bounds = 1:150) {
+  results <- integer(100)
+  l = dim(y)[1]
+  
+  for (z in bounds) {
+    d = y[z, ]
+    tmp <- classifier(d, iris, k = bestk, mode = kNN, rall = TRUE)
+    
+    for (i in 1:100) {
+      tclass <- kwNN(tmp[1:bestk,][-1, ], i / 100)
+      results[i] <- results[i] + 1 * (d$Species == tclass)
+    } 
+  }
+  print(results)
+  plot(for_plot(results, 150), type = 'l', xlab = "q", ylab = "miss")
+  #print(which.max(results))
+  
+  
+  return(which.max(results) / 100)
+  #return(NA)
+}
+
+best_q <- LOOq(iris, best_k)
+
+make_map <- function(colors, classifier = kNN, k = NA, q = NA) {
   #
   plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
+  points(iris[, 3:4], pch = 22, bg = colors[iris$Species], col 
+       = colors[iris$Species], asp = 1)
+  
   i = 0
   j = 0
-  while (i < 10) {
-    while(j < 2.5) {
+  while (i <= 7) {
+    while(j < 2.6) {
      p <- iris[1, ]
      p[3] = i
      p[4] = j
-     p$Species <- classifier(p, iris, k)
-     points(p[3], p[4], pch = 22, bg = colors[p$Species], col = colors[p$Species], asp = 1)
-     j <- j + 2/10
+     if(is.na(q)) {
+       p$Species <- classifier(p, iris, k)
+     } else {
+       p$Species <- classifier(p, iris, k, q)
+     }
+     points(p[3], p[4], pch = 22, col = colors[p$Species], asp = 1)
+     j <- j + 1/10
     }
-    i <- i + 2/10
+    i <- i + 1/10
     j <- 0
   }
 }
+
+colors <- c("setosa" = "red", "versicolor" = "green3", 
+            "virginica" = "blue") 
+make_map(colors, k = 5)
+make_map(colors, k = best_k)
+make_map(colors, q = best_q)
+make_map(colors, k = 5, q = 0.7)
+make_map(colors, k = 7, q = best_q)
 
 
 
 x <- iris[sample(1:150, 10), ]
 x$Species <- NA
 
-colors <- c("setosa" = "red", "versicolor" = "green3", 
-            "virginica" = "blue") 
+
 plot(iris[, 3:4], pch = 21, bg = colors[iris$Species], col 
      = colors[iris$Species], asp = 1)
 
@@ -117,4 +167,4 @@ points(x[,3], x[,4], pch = 22, bg = colors[x$Species],
        col = colors[x$Species])
 
 
-make_map(colors(k = best_k))
+make_map(colors, k = best_k)
