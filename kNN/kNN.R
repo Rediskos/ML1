@@ -7,7 +7,7 @@ distanses <- function(x, y, param = NA, metric = euclid) {
   l <- dim(y)[1]
   
   if(is.na(param)) {
-    param <- c(3:4)
+    param <- c(1:4)
   }
   
   dist <- matrix(NA, l, 2)

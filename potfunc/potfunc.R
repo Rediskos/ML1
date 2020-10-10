@@ -61,17 +61,25 @@ parsewindow <- function(x, y, h, metrica = distanses, param = NA, rall = FALSE) 
 }
 
 
-potfuc <- function(y, missrate = 0.05, h = best_h) {
+potfuc <- function(y, h = best_h) {
   
   
   
   l = dim(y)[1]
   results <- 1
   miss = 1
-  while(miss > missrate) {
-    cat("\r",fill = TRUE)
-    cat("\r")
-    cat(miss)
+  pmiss = 1
+  cnt = 0
+  while(cnt < 5) {
+    cat(miss, fill = TRUE)
+    
+    if(abs(miss - pmiss) < 1e-5) {
+      cnt <- cnt + 1
+    } else {
+      cnt = 0
+    }
+    pmiss = miss
+    
     miss = 1
     for (i in 1:l) {
       d <- y[i, ]
@@ -94,6 +102,7 @@ pfield
 tmp <- potfuc(pfield)
 
 tmp
+
 
 for_plot <- function(x, d){1 - x/d}
 
@@ -139,7 +148,7 @@ LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA, potenc)
 
 best_h <- LOO(iris)
 
-make_map <- function(colors = NA, classifier = parsewindow, h = 2) {
+make_map <- function(y, colors = NA, classifier = parsewindow, h = 2) {
   #
   
   if(is.na(colors)) {
@@ -154,10 +163,11 @@ make_map <- function(colors = NA, classifier = parsewindow, h = 2) {
   j = 0
   while (i <= 7) {
     while(j < 2.6) {
-      p <- iris[1, ]
+      p <- y[1, ]
       p[3] = i
       p[4] = j
-      p$Species <- classifier(p, iris, h)
+      p$potenc = 0
+      p$Species <- classifier(p, y, h)
       points(p[3], p[4], pch = 22, col = colors[p$Species], asp = 1)
       j <- j + 1/10
     }
@@ -169,7 +179,7 @@ make_map <- function(colors = NA, classifier = parsewindow, h = 2) {
 
 
 make_map()
-make_map(h = best_h)
+make_map(tmp, h = best_h)
 
 pfield <- data.frame(cbind(integer(150)))
 pfield
