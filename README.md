@@ -9,5 +9,5 @@
 ## Метрические алгоритмы классификации
 ### Алгоритм ближайших соседей
 Алгоритм ближайших соседей далее будет называться ***kNN***(k-nearest-neighbourhoods)
-![ХДЕ?????](kNN\base.png?raw=true "Optional Title")
+![ХДЕ?????](kNN/base.png?raw=true "Optional Title")
 [:arrow_up:Оглавление](#Оглавление)
