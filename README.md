@@ -38,7 +38,7 @@
 
 ![ХДЕ?????](kNN/heatmapk7q01kwnn.png?raw=true "Optional Title")
 
-Сравнивая ***kNN*** с ***kwNN***
+Сравнивая ***kNN*** с ***kwNN*** 
 
 
 [:arrow_up:Оглавление](#Оглавление)
