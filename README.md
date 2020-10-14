@@ -38,7 +38,13 @@
 
 ![ХДЕ?????](kNN/heatmapk7q01kwnn.png?raw=true "Optional Title")
 
-Сравнивая ***kNN*** с ***kwNN*** 
+***kwNN***, по сравнению с ***kNN***, лучше работает в некоторых выборках. Например где колличество объектов одного из классов меньше чем ***k***.  
+
+![ХДЕ?????](kNN/kNNkwNNcomp.png?raw=true "Optional Title")
+
+![ХДЕ?????](kNN/kNNkwNNcompWRONG.png?raw=true "Optional Title")
+
+![ХДЕ?????](kNN/kNNkwNNcompTRUE.png?raw=true "Optional Title")
 
 
 [:arrow_up:Оглавление](#Оглавление)
