@@ -168,3 +168,40 @@ points(x[,3], x[,4], pch = 22, bg = colors[x$Species],
 
 
 make_map(colors, k = best_k)
+
+test <- iris[c(1:7),]
+test
+test[c(5:7), 5] = "virginica" 
+
+test[c(1:4), 3] = 1
+test
+for(i in 1:4) {
+  test[i, 4] = i
+}
+test
+
+test[c(5:7), 3] = 6
+test
+for(i in 2:4) {
+  test[3 + i, 4] = i
+}
+test
+x <- test
+plot(test[,3], test[,4], pch = 22, bg = colors[test$Species], xlim=c(0, 6), ylim=c(0, 5),
+       col = colors[test$Species], asp = 3, cex = 5, xlab = "x", ylab = "y")
+
+test
+ans <- vector()
+for(i in 1:dim(test)[1]) {
+  # ans <- c(ans, kNN(test[i,], test, 7))
+  ans <- c(ans, kNN(test[i,], test, 7, q = 0.5))
+}
+
+plot(test[,3], test[,4], pch = 22, bg = colors[test$Species], xlim=c(0, 6), ylim=c(0, 5),
+     col = colors[test$Species], asp = 3, cex = 5, xlab = "x", ylab = "y")
+ans
+
+x$Species <- ans
+x
+points(x[,3], x[,4], pch = 23,bg = colors[x$Species],
+       col = colors[x$Species], cex = 5)

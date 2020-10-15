@@ -20,7 +20,31 @@ distanses <- function(x, y, param = NA, metric = euclid) {
   return (ordY)
 }
 
-check_window <- function(x, y, h, param = NA) {
+kernel_square <- function(p, h) {
+  ans <- 0
+  
+  if(p/h <= 1) {
+    ans <- 0.5
+  }
+  
+  return(ans)
+}
+
+kernel_triangle  <- function(p, h) {
+  ans <- max(0, 1 - p/h)
+  
+  
+  return(ans)
+}
+
+kernel_gaus <- function(p, h) {
+  ans <- (1 / (sqrt(2 * pi))) * (exp(-((p/h) * (p/h)) / 2)) 
+  
+  
+  return(ans)
+}
+
+check_window <- function(x, y, h, param = NA, kernel = kernel_square) {
   cnt <- integer(3)
   names(cnt) <- names(table(y$Species))
   
@@ -32,8 +56,11 @@ check_window <- function(x, y, h, param = NA) {
     param <- c(3:4)
   }
   
-  while (euclid(x[param], y[i, param]) < h && i <= l) {
-    cnt[y$Species[i]] <- cnt[y$Species[i]] + 1
+  while (i <= l) {
+    tmp <- euclid(x[param], y[i, param])
+    
+    cnt[y$Species[i]] <- cnt[y$Species[i]] + kernel(tmp, h)
+    
     i <- i + 1
   }
   
@@ -44,7 +71,8 @@ check_window <- function(x, y, h, param = NA) {
   return(names(which.max(cnt)))
 }
 
-parsewindow <- function(x, y, h, metrica = distanses, param = NA, rall = FALSE) {
+parsewindow <- function(x, y, h, metrica = distanses,
+                        param = NA, rall = FALSE, kernel = kernel_square) {
   ordY <- distanses(x, y)
   
   if(rall) {
@@ -55,12 +83,12 @@ parsewindow <- function(x, y, h, metrica = distanses, param = NA, rall = FALSE) 
     param <- c(3:4)
   }
   
-  return(check_window(x, ordY, h, param = param))
+  return(check_window(x, ordY, h, param = param, kernel = kernel))
 }
 
 for_plot <- function(x, d){1 - x/d}
 
-LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA) {
+LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA, kernel = kernel_square) {
   
   if(is.na(param)) {
     param <- c(3:4)
@@ -72,7 +100,7 @@ LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA) {
   for (z in 1:l) {
     d = y[z, ]
     cat(z)
-    tmp <- classifier(d, iris, l, rall = TRUE)
+    tmp <- classifier(d, iris, l, rall = TRUE, kernel = kernel)
     
     cnt <- integer(3)
     names(cnt) <- names(table(y$Species))
@@ -103,7 +131,7 @@ LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA) {
 
 best_h <- LOO(iris)
 
-make_map <- function(colors = NA, classifier = parsewindow, h = 2) {
+make_map <- function(colors = NA, classifier = parsewindow, h = 2, kernel = kernel_square) {
   #
   
   if(is.na(colors)) {
@@ -121,7 +149,7 @@ make_map <- function(colors = NA, classifier = parsewindow, h = 2) {
       p <- iris[1, ]
       p[3] = i
       p[4] = j
-      p$Species <- classifier(p, iris, h)
+      p$Species <- classifier(p, iris, h, kernel = kernel)
       points(p[3], p[4], pch = 22, col = colors[p$Species], asp = 1)
       j <- j + 1/10
     }
@@ -132,8 +160,10 @@ make_map <- function(colors = NA, classifier = parsewindow, h = 2) {
 
 
 
-make_map()
-make_map(h = best_h)
+
+make_map(h = 0.1, kernel = kernel_triangle)
+make_map(h = 0.3,  kernel = kernel_triangle)
+make_map(h = 2, kernel = kernel_triangle)
 
 x <- iris[sample(1:150, 10), ]
 x
