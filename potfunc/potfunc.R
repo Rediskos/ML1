@@ -20,7 +20,31 @@ distanses <- function(x, y, param = NA, metric = euclid) {
   return (ordY)
 }
 
-check_window <- function(x, y, h, param = NA) {
+kernel_square <- function(p, h) {
+  ans <- 0
+  
+  if(p/h <= 1) {
+    ans <- 0.5
+  }
+  
+  return(ans)
+}
+
+kernel_triangle  <- function(p, h) {
+  ans <- max(0, 1 - p/h)
+  
+  
+  return(ans)
+}
+
+kernel_gaus <- function(p, h) {
+  ans <- (1 / (sqrt(2 * pi))) * (exp(-((p/h) * (p/h)) / 2)) 
+  
+  
+  return(ans)
+}
+
+check_window <- function(x, y, h, param = NA, kernel = kernel_square) {
   cnt <- integer(3)
   names(cnt) <- names(table(y$Species))
   
@@ -32,9 +56,11 @@ check_window <- function(x, y, h, param = NA) {
     param <- c(3:4)
   }
   
-  
-  while (euclid(x[param], y[i, param]) < h && i <= l) {
-    cnt[y$Species[i]] <- cnt[y$Species[i]] + y$potenc[i]
+  while (i <= l) {
+    tmp <- euclid(x[param], y[i, param])
+    
+    cnt[y$Species[i]] <- cnt[y$Species[i]] + y$potenc[i] * kernel(tmp, h)
+    
     i <- i + 1
   }
   
@@ -45,7 +71,8 @@ check_window <- function(x, y, h, param = NA) {
   return(names(which.max(cnt)))
 }
 
-parsewindow <- function(x, y, h, metrica = distanses, param = NA, rall = FALSE) {
+parsewindow <- function(x, y, h, metrica = distanses,
+                        param = NA, rall = FALSE, kernel = kernel_square) {
   ordY <- distanses(x, y)
   
   if(rall) {
@@ -56,12 +83,11 @@ parsewindow <- function(x, y, h, metrica = distanses, param = NA, rall = FALSE) 
     param <- c(3:4)
   }
   
-  
-  return(check_window(x, ordY, h, param = param))
+  return(check_window(x, ordY, h, param = param, kernel = kernel))
 }
 
 
-potfuc <- function(y, h = best_h) {
+potfuc <- function(y, h = best_h, kernel = kernel_square) {
   
   
   
@@ -70,7 +96,8 @@ potfuc <- function(y, h = best_h) {
   miss = 1
   pmiss = 1
   cnt = 0
-  while(cnt < 5) {
+  
+  while(cnt < 3) {
     cat(miss, fill = TRUE)
     
     if(abs(miss - pmiss) < 1e-5) {
@@ -83,7 +110,7 @@ potfuc <- function(y, h = best_h) {
     miss = 1
     for (i in 1:l) {
       d <- y[i, ]
-      tclass <- parsewindow(d, y, best_h)
+      tclass <- parsewindow(d, y, best_h, kernel = kernel)
       
       if(tclass != d$Species) {
         y$potenc[i] <- y$potenc[i] + 1
@@ -99,9 +126,18 @@ potfuc <- function(y, h = best_h) {
 }
 
 pfield
-tmp <- potfuc(pfield)
-
+tmp <- potfuc(pfield, kernel = kernel_triangle)
+colors <- c("setosa" = "red", "versicolor" = "green3", 
+            "virginica" = "blue", "na" = "yellow") 
 tmp
+
+
+plot(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
+     bg = colors[tmp$Species], col 
+     = colors[tmp$Species], xlab = "Petal Length", ylab = "Petal Width")
+points(tmp$Petal.Length, tmp$Petal.Width,
+     bg = colors[tmp$Species], col 
+     = colors[tmp$Species] ,  cex = tmp$potenc + 1)
 
 
 for_plot <- function(x, d){1 - x/d}
@@ -148,16 +184,19 @@ LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA, potenc)
 
 best_h <- LOO(iris)
 
-make_map <- function(y, colors = NA, classifier = parsewindow, h = 2) {
+make_map <- function(y, colors = NA, classifier = parsewindow, h = 2, kernel = kernel_square) {
   #
   
   if(is.na(colors)) {
     colors <- c("setosa" = "red", "versicolor" = "green3", 
                 "virginica" = "blue", "na" = "yellow") 
   }
-  plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
-  points(iris[, 3:4], pch = 22, bg = colors[iris$Species], col 
-         = colors[iris$Species], asp = 1)
+  plot(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
+       bg = colors[tmp$Species], col 
+       = colors[tmp$Species], xlab = "Petal Length", ylab = "Petal Width")
+  points(tmp$Petal.Length, tmp$Petal.Width,
+         bg = colors[tmp$Species], col 
+         = colors[tmp$Species] ,  cex = tmp$potenc + 1)
   
   i = 0
   j = 0
@@ -167,8 +206,8 @@ make_map <- function(y, colors = NA, classifier = parsewindow, h = 2) {
       p[3] = i
       p[4] = j
       p$potenc = 0
-      p$Species <- classifier(p, y, h)
-      points(p[3], p[4], pch = 22, col = colors[p$Species], asp = 1)
+      p$Species <- classifier(p, y, h, kernel = kernel)
+      points(p[3], p[4], pch = 21, col = colors[p$Species], asp = 1)
       j <- j + 1/10
     }
     i <- i + 1/10

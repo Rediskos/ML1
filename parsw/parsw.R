@@ -108,13 +108,13 @@ LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA, kernel 
     ptr = 2
     
     while(h <= 300 && ptr <= l) {
-      
+
       if(euclid(d[3:4], tmp[ptr, 3:4]) > h / 100) {
         tmp_class <- names(which.max(cnt))
         results[h] <- results[h] + 1 * (tmp_class == d$Species)
         h <- h + 1
       }
-      
+
       cnt[tmp$Species[ptr]] <- cnt[tmp$Species[ptr]] + 1
       ptr <- ptr + 1
     }
@@ -122,7 +122,7 @@ LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA, kernel 
   }
   
   print(results)
-  i <- seq(from = 0.01, to = 3, by = 0.01)
+  i <- seq(from = 0.3, to = 3, by = 0.01)
   plot(i, for_plot(results[i * 100] , 150), type = 'l', xlab = "h", ylab = "miss")
   
   return(which.max(results) / 100)
@@ -161,9 +161,9 @@ make_map <- function(colors = NA, classifier = parsewindow, h = 2, kernel = kern
 
 
 
-make_map(h = 0.1, kernel = kernel_triangle)
-make_map(h = 0.3,  kernel = kernel_triangle)
-make_map(h = 2, kernel = kernel_triangle)
+make_map(h = 0.1, kernel = kernel_gaus)
+make_map(h = 0.3,  kernel = kernel_gaus)
+make_map(h = 2, kernel = kernel_gaus)
 
 x <- iris[sample(1:150, 10), ]
 x
