@@ -71,6 +71,10 @@ check_window <- function(x, y, h, param = NA, kernel = kernel_square) {
   return(names(which.max(cnt)))
 }
 
+
+make_map(tmp, h = best_h)
+
+
 parsewindow <- function(x, y, h, metrica = distanses,
                         param = NA, rall = FALSE, kernel = kernel_square) {
   ordY <- distanses(x, y)
@@ -100,7 +104,7 @@ potfuc <- function(y, h = best_h, kernel = kernel_square) {
   while(cnt < 3) {
     cat(miss, fill = TRUE)
     
-    if(abs(miss - pmiss) < 1e-5) {
+    if(miss - pmiss < 1e-6) {
       cnt <- cnt + 1
     } else {
       cnt = 0
@@ -126,18 +130,12 @@ potfuc <- function(y, h = best_h, kernel = kernel_square) {
 }
 
 pfield
-tmp <- potfuc(pfield, kernel = kernel_triangle)
+tmp <- potfuc(pfield, kernel = kernel_gaus)
 colors <- c("setosa" = "red", "versicolor" = "green3", 
             "virginica" = "blue", "na" = "yellow") 
 tmp
 
 
-plot(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
-     bg = colors[tmp$Species], col 
-     = colors[tmp$Species], xlab = "Petal Length", ylab = "Petal Width")
-points(tmp$Petal.Length, tmp$Petal.Width,
-     bg = colors[tmp$Species], col 
-     = colors[tmp$Species] ,  cex = tmp$potenc + 1)
 
 
 for_plot <- function(x, d){1 - x/d}
@@ -184,6 +182,14 @@ LOO <- function(y, classifier = parsewindow, bounds = 1:150, param = NA, potenc)
 
 best_h <- LOO(iris)
 
+plot(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
+     bg = colors[tmp$Species], col 
+     = colors[tmp$Species], xlab = "Petal Length", ylab = "Petal Width")
+points(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
+       bg = colors[tmp$Species], col 
+       = "black" ,  cex = tmp$potenc / 3 + 1)
+
+
 make_map <- function(y, colors = NA, classifier = parsewindow, h = 2, kernel = kernel_square) {
   #
   
@@ -191,12 +197,14 @@ make_map <- function(y, colors = NA, classifier = parsewindow, h = 2, kernel = k
     colors <- c("setosa" = "red", "versicolor" = "green3", 
                 "virginica" = "blue", "na" = "yellow") 
   }
-  plot(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
+  plot(1, type="n", xlab = "Petal Length", ylab = "Petal Width", xlim=c(0, 7), ylim=c(0, 2.5))
+  
+  points(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
        bg = colors[tmp$Species], col 
        = colors[tmp$Species], xlab = "Petal Length", ylab = "Petal Width")
-  points(tmp$Petal.Length, tmp$Petal.Width,
+  points(tmp$Petal.Length, tmp$Petal.Width, pch = 21,
          bg = colors[tmp$Species], col 
-         = colors[tmp$Species] ,  cex = tmp$potenc + 1)
+         = "black" ,  cex = tmp$potenc / 3 + 1)
   
   i = 0
   j = 0
@@ -217,8 +225,7 @@ make_map <- function(y, colors = NA, classifier = parsewindow, h = 2, kernel = k
 
 
 
-make_map()
-make_map(tmp, h = best_h)
+make_map(tmp, h = best_h, kernel = kernel_gaus)
 
 pfield <- data.frame(cbind(integer(150)))
 pfield

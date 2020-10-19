@@ -3,6 +3,7 @@ euclid <- function(x, y){
   sqrt(sum((x - y)^2))
 }
 
+
 distanses <- function(x, y, param = NA, metric = euclid) {
   l <- dim(y)[1]
   
@@ -21,10 +22,10 @@ distanses <- function(x, y, param = NA, metric = euclid) {
   return (ordY)
 }
 
-simpl_marg_knn <- function(x, t) {
+simpl_marg_knn <- function(x, class_name) {
   tmp <- table(x$Species)
-  z = tmp[names(tmp) != t]
-  return( tmp[t] - z[which.max(z)] )
+  z = tmp[names(tmp) != class_name]
+  return( tmp[class_name] - z[which.max(z)] )
 }
 
 marg_knn <- function(x, y, k, chk_fst = FALSE) {
@@ -144,23 +145,35 @@ make_STOLP_map <- function(st, y = iris, colors = NA, classifier = parsewindow, 
 
 after_STOLP <- data.frame()
 
+margins <- vector()
 
 for(i in 1:dim(iris)[1]) {
   
   t <- iris[i, ]
   
   mt <- marg_knn(t, iris, 7)
+  margins <- c(margins, mt)
   mt <- data.frame(mt)
   
   names(mt) <- "margin"
   kkk = rbind(after_STOLP, cbind(t, mt))
   if(mt >= 0) {
     
-    
     after_STOLP <- rbind(after_STOLP, cbind(t, mt))
 
   }
 }
+
+l <- length(margins)
+r <- 4
+margins <- sort.int(margins)
+margins
+
+plot(1:l, margins, type = "l", xlab = "element", ylab = "margin")
+points(-r:l, integer(r + l + 1), type = 
+"l")
+
+hist(margins)
 
 dim(after_STOLP)[1]
 
@@ -172,7 +185,6 @@ make_STOLP_map(after_STOLP)
 fmm <- function(x) {return(which(iris$Species == x))}
 
 nm <- levels(iris$Species)
-
 s <- data.frame()
 
 for(i in nm) {
