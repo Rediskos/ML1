@@ -1,5 +1,5 @@
 
-#считает вероятностное распределение для точки
+#считает плотность вероятностного распределения для точки
 calc_prob_rasp <- function(x, mu, E) {
   for_exp <- (t(x - mu) %*% solve(E) %*% (x - mu)) / (-2)
   nominator <- exp(for_exp)
@@ -7,7 +7,8 @@ calc_prob_rasp <- function(x, mu, E) {
   for_sqrt <- (2 * pi) ^ dim(E)[1] * det(E)
   denominator <- sqrt(for_sqrt)
   
-  return(nominator / denominator)
+  ans <- nominator / denominator
+  return(ans)
 }
 
 #отрисовка линий уровня двумерной нормальной плотности распределения
@@ -42,28 +43,45 @@ draw_norm_lines <- function(mu, E) {
 
 n <- 2
 
+# dev.new()
 
-dev.new()
-
-#признаки не коррелированы
+#признаки не коррелированы 
+#1
 mu <- matrix(c(2, 2), nrow = n, ncol = 1)
 E <- matrix(c(0.5, 0, 0, 2), nrow = n, ncol = n)
-
-
 draw_norm_lines(mu, E)
 
+#2
 mu <- matrix(c(2, 2), nrow = n, ncol = 1)
 E <- matrix(c(2, 0, 0, 0.5), nrow = n, ncol = n)
-
-
 draw_norm_lines(mu, E)
 
 
 
-
-#признаки не коррелированы
+#признаки не коррелированы одинаковые дисперсии
+#3
 mu <- matrix(c(2, 2), nrow = n, ncol = 1)
-E <- matrix(c(1, 0, 0, 2), nrow = n, ncol = n)
+E <- matrix(c(1, 0, 0, 1), nrow = n, ncol = n)
+draw_norm_lines(mu, E)
 
 
+#признаки корелированы
+#4
+mu <- matrix(c(2, 2), nrow = n, ncol = 1)
+E <- matrix(c(2, 0.4, 0.4, 2), nrow = n, ncol = n)
+draw_norm_lines(mu, E)
+
+#5
+mu <- matrix(c(2, 2), nrow = n, ncol = 1)
+E <- matrix(c(2, -0.4, -0.4, 2), nrow = n, ncol = n)
+draw_norm_lines(mu, E)
+
+#6
+mu <- matrix(c(2, 2), nrow = n, ncol = 1)
+E <- matrix(c(2, 0.9, 0.9, 2), nrow = n, ncol = n)
+draw_norm_lines(mu, E)
+
+#7
+mu <- matrix(c(2, 2), nrow = n, ncol = 1)
+E <- matrix(c(2, -0.9, -0.9, 2), nrow = n, ncol = n)
 draw_norm_lines(mu, E)
