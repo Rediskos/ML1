@@ -165,7 +165,7 @@ make_map(h = 0.1, kernel = kernel_gaus)
 make_map(h = 0.3,  kernel = kernel_gaus)
 make_map(h = 2, kernel = kernel_gaus)
 
-x <- iris[sample(1:150, 10), ]
+x <- iris
 x
 x$Species <- NA
 
@@ -177,6 +177,25 @@ for(i in 1:dim(x)[1]) {
 }
 ans
 str(ans)
+
+
+alll <- 0
+
+cnt <- 0
+for(i in 1:dim(x)[1]) {
+  # ans <- c(ans, kNN(test[i,], test, 7))
+  st <- Sys.time()
+  tmp <- parsewindow(x[i,], iris, h = best_h)
+  
+  cnt <- cnt + 1 * (iris$Species[i] == tmp)
+  ans <- c(ans, tmp)
+  ed <- Sys.time()
+  alll <- alll + ed - st
+}
+
+alll
+
+cnt
 
 x$Species <- ans
 x

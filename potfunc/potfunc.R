@@ -130,7 +130,7 @@ potfuc <- function(y, h = best_h, kernel = kernel_square) {
 }
 
 pfield
-tmp <- potfuc(pfield, kernel = kernel_gaus)
+keke <- potfuc(pfield, kernel = kernel_gaus)
 colors <- c("setosa" = "red", "versicolor" = "green3", 
             "virginica" = "blue", "na" = "yellow") 
 tmp
@@ -223,7 +223,26 @@ make_map <- function(y, colors = NA, classifier = parsewindow, h = 2, kernel = k
   }
 }
 
+x <- iris
 
+alll <- 0
+
+ans <- vector()
+
+cnt <- 0
+for(i in 1:dim(x)[1]) {
+  # ans <- c(ans, kNN(test[i,], test, 7))
+  st <- Sys.time()
+  tmp <- parsewindow(x[i,], keke, h = best_h, kernel = kernel_gaus)
+  
+  cnt <- cnt + 1 * (keke$Species[i] == tmp)
+  ans <- c(ans, tmp)
+  ed <- Sys.time()
+  alll <- alll + ed - st
+}
+
+alll
+cnt
 
 make_map(tmp, h = best_h, kernel = kernel_gaus)
 

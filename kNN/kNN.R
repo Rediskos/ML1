@@ -190,12 +190,27 @@ x <- test
 plot(test[,3], test[,4], pch = 22, bg = colors[test$Species], xlim=c(0, 6), ylim=c(0, 5),
        col = colors[test$Species], asp = 3, cex = 5, xlab = "x", ylab = "y")
 
-test
+test <- iris
 ans <- vector()
+
+alll <- 0
+
+cnt <- 0
 for(i in 1:dim(test)[1]) {
   # ans <- c(ans, kNN(test[i,], test, 7))
-  ans <- c(ans, kNN(test[i,], test, 7, q = 0.5))
+  st <- Sys.time()
+  tmp <- kNN(test[i,], iris, 7, q = 0.01)
+  
+  cnt <- cnt + 1 * (iris$Species[i] == tmp)
+  
+  ans <- c(ans, tmp)
+  ed <- Sys.time()
+  alll <- alll + ed - st
 }
+
+alll
+
+cnt
 
 plot(test[,3], test[,4], pch = 22, bg = colors[test$Species], xlim=c(0, 6), ylim=c(0, 5),
      col = colors[test$Species], asp = 3, cex = 5, xlab = "x", ylab = "y")

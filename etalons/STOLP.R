@@ -210,7 +210,7 @@ while(length(s[,1]) < length(after_STOLP[,1])) {
     p <- after_STOLP[i, ]
     
     pmarg <- marg_knn(p, s, min(length(s), 7), chk_fst = TRUE)
-    print(pmarg)
+    # print(pmarg)
     if(pmarg != "kek" && pmarg < 1) {
       cnt <- cnt + 1
     } 
@@ -221,7 +221,7 @@ while(length(s[,1]) < length(after_STOLP[,1])) {
     }
   }
   
-  if(cnt < 1 && length(s[,1]) > 7) {
+  if(cnt < 1) {
    break 
   }
   
@@ -230,5 +230,25 @@ while(length(s[,1]) < length(after_STOLP[,1])) {
 
 s
 
+x <- iris
+
+alll <- 0
+
+ans <- vector()
+
+cnt <- 0
+for(i in 1:dim(x)[1]) {
+  # ans <- c(ans, kNN(test[i,], test, 7))
+  st <- Sys.time()
+  tmp <- kNN(x[i,], s, k = 7)
+  
+  cnt <- cnt + 1 * (keke$Species[i] == tmp)
+  ans <- c(ans, tmp)
+  ed <- Sys.time()
+  alll <- alll + ed - st
+}
+
+alll
+cnt
 
 make_STOLP_map(s)
