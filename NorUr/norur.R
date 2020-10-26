@@ -13,6 +13,8 @@ calc_prob_rasp <- function(x, mu, E) {
 
 #отрисовка линий уровня двумерной нормальной плотности распределения
 draw_norm_lines <- function(mu, E) {
+  #mu - математичское ожидание
+  #E - матрица ковариации
   
   #хранит плотности распределения точек
   prob_disp <- data.frame()
@@ -40,6 +42,11 @@ draw_norm_lines <- function(mu, E) {
   contourplot(thic ~ x * y, data = tt, region = TRUE)
   
 }
+
+
+#n - размерность пространства
+#mu - математическое ожидаение
+#E - ковариационная матрица
 
 n <- 2
 
