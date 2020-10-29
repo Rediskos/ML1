@@ -85,15 +85,17 @@ calc_aprior_prob <- function(features) {
 
 #формула плотности для одного признака
 #из класса для ннбс
-formula_tight <- function(Point, mu, sigma) {
+formula_tight <- function(Point, mu, tsigma) {
+  mu <- as.numeric(mu)
+  tsigma <- as.numeric(tsigma)
   for_exp <- (Point - mu)^2
-  for_exp <- for_exp / (2 * sigma ^ 2)
+  for_exp <- for_exp / (2 * tsigma ^ 2)
   
   #правая часть формулы
   rpart <- exp(-for_exp)
   
   #левая часть формулы.
-  lpart <- 1 / (sigma * sqrt(2 * pi))
+  lpart <- 1 / (tsigma * sqrt(2 * pi))
   
   ans <- lpart * rpart
   
@@ -103,10 +105,10 @@ formula_tight <- function(Point, mu, sigma) {
 
 #возвращаем плотность для точки
 #для наивного байесовского классификатора
-calc_tight <- function(feature, tclass, tmus, tsigmas) {
+calc_tight <- function(feature, tclass, tmus, ttsigmas) {
   #feature - признаки, как строка дата фрейма
   #tmus - датафрейм мат ожиданий
-  #tsigmas - датафрейм среднеквадратичных отклонений
+  #ttsigmas - датафрейм среднеквадратичных отклонений
   #tclass - класс, проверяющийся
   
   #колличество признаков
@@ -117,16 +119,16 @@ calc_tight <- function(feature, tclass, tmus, tsigmas) {
   mus <- tmus[tmus[, tl] == tclass, ]
   
   #выделить среднеквадратичные отклонения проверяемого класса
-  tl <-dim(tsigmas)
-  sigmas <- tsigmas[tsigmas[,tl] == tclass, ]
+  tl <-dim(ttsigmas)[2]
+  tsigmas <- ttsigmas[which(ttsigmas[,tl] == tclass) , ]
   
   
   
   #хранит суммы логарифмов плотностей
   tight_sum <- 0
   
-  for(i in 1:l - 1) {
-    tmp <- formula_tight(feature[,i], mus[,i], sigmas[,i])
+  for(i in 1:l) {
+    tmp <- formula_tight(feature[,i], mus[,i], tsigmas[,i])
     tight_sum <- tight_sum + log(tmp)
   }
   
@@ -134,17 +136,18 @@ calc_tight <- function(feature, tclass, tmus, tsigmas) {
 }
 
 #основной алгоритм наивного байеса.
-naive_bias <- function(x, y, tlyambda = NA, tmu = NA, tsigma = NA, taprior = NA) {
+naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA) {
   #x - объект для классификации
   #y - выборка
   #tmu - матожиданий предоставленные пользователем.
-  #tsigma - сигмы предоставленные пользователем 
+  #ttsigma - сигмы предоставленные пользователем 
   #taprior - априорные вероятности предоставленные пользователем
   
   mu <- NA #мат ожидания
-  sigma <- NA #сигмы
+  tsigma <- NA #сигмы
   aprior <- NA #априорные вероятности
   lyambda <- NA #переменные штрафа за ошибку
+  # print("ALAHAMORA")
   
   #условия проверяющие дал ли пользователь какие-нибудь начальные данные
   #если не дал, то высчитать самостоятельно
@@ -154,10 +157,10 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, tsigma = NA, taprior = NA)
     mu <- calc_mu(y)
   }
   
-  if(is.na(tsigma) == FALSE) {
-    sigma <- tsigma 
+  if(is.na(ttsigma) == FALSE) {
+    tsigma <- ttsigma 
   } else {
-    sigma <- calc_sigma(y)
+    tsigma <- calc_sigma(y)
   }
   
   if(is.na(taprior) == FALSE) {
@@ -169,19 +172,22 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, tsigma = NA, taprior = NA)
   #использовать датафрейм мат ожиданий, чтобы посчитать колличество классов
   l <- dim(mu)[1]
   
-  if (is.na(tlyambda == FALSE)) {
+  if (is.na(tlyambda) == FALSE) {
     lyambda <- tlyambda
   } else {
     lyambda <- seq(1, l)
   }
   
+  
   maxv <- -1 #начальный максимальный результат
   best_class <- aprior[1,2] #счтитаем клссом по умолчанию первый класс
+  
+  
   
   for (i in 1:l) {
     tclass <- aprior[i,2]
     aprior_part <- log(lyambda[i] * aprior[i, 1])
-    tight_part <- calc_tight(i, tclass, mu, sigma)
+    tight_part <- calc_tight(x, tclass, mu, tsigma)
     
     united_part <- aprior_part + tight_part
     
@@ -191,5 +197,86 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, tsigma = NA, taprior = NA)
     }
   }
   
-  return(best_class)
+  if(maxv < -0.9999) {
+    maxv <- 0.00001
+    best_class <- "na"
+  }
+  
+  ans <- c(best_class, as.numeric(maxv))
+  ans <- data.frame(ans[1], ans[2])
+  names(ans) <- c("class", "tig")
+  
+  return(ans)
 }
+
+make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
+  #
+  
+  plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
+  points(iris[, 3:4], pch = 21, bg = colors[iris$Species], col 
+         = colors[iris$Species], asp = 1)
+  
+  i = 0
+  j = 0
+  
+  nms <- names(x)
+  
+  tmps <- data.frame()
+  
+  while (i <= 7) {
+    while(j < 2.6) {
+      p <- iris[1, 1:(dim(iris)[2] - 1)]
+      p[3] = i
+      p[4] = j
+      
+      t <- classifier(p[,3:4], iris[,3:5])
+      
+      p <- cbind(p, t[1], t[2])
+      points(p[,3], p[,4], pch = 21,
+             # bg = colors[p[, 5]],
+             col = colors[p$class], cex = as.numeric(p$tig) + 1)
+      j <- j + 1/10
+      
+      tmps <- rbind(tmps, p)
+    }
+    i <- i + 1/10
+    j <- 0
+  }
+  
+  names(tmps) <- nms
+  
+  
+  contourplot(tight ~ Petal.Length * Petal.Width, data = tmps, region = TRUE)
+}
+
+colors <- c("setosa" = "red", "versicolor" = "green3", 
+            "virginica" = "blue", "na" = "yellow") 
+
+make_map(colors)
+
+
+x <- iris[, c(1:(dim(iris)[2] - 1))]
+x
+
+# plot(iris[, 3:4], pch = 21, bg = colors[iris$Species], col 
+#      = colors[iris$Species], asp = 1)
+# 
+# plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
+# points(iris[, 3:4], pch = 21, bg = colors[iris$Species], col 
+#      = colors[iris$Species], asp = 1)
+
+ans <- data.frame()
+for(i in 1:dim(x)[1]) {
+  ans <- rbind(ans, naive_bias(x[i, 3:4], iris[, 3:5]))
+}
+
+str(ans)
+
+x <- cbind(x, ans)
+x
+plot(x[,3], x[,4], pch = 22, bg = colors[x[, 5]],
+       col = colors[x[, 5]], cex = as.numeric(x[,6]) + 1)
+
+
+points(x[,3], x[,4], pch = 22, bg = colors[x[, 5]],
+     col = colors[x[, 5]], cex = x[,6] + 1)
