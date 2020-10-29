@@ -11,6 +11,7 @@
     5. [Сравнение метрических алгоритмов](#Сравнение-метрических-алгоритмов)
 1. [Байесовские алгоритмы классификации](#Байесовские-алгоритмы-классификации)
     1. [Линии уровня нормального распределения](#Линии-уровня-нормального-распределения)
+    2. [Нормальный наивный байесовский классификатор](#Нормальный-наивный-байесовский-классификатор)
     
 ## Метрические алгоритмы
 [:arrow_up:Оглавление](#Оглавление)
@@ -501,4 +502,232 @@ draw_norm_lines <- function(mu, E) {
   
 }
 ```
+[:arrow_up:Оглавление](#Оглавление)
+
+### Нормальный наивный байесовский классификатор
+
+Если все признаки нормально распределены и независимы, то будем использовать оптимальное байесовское решающее правило для наивного байесовского классификатора
+
+![ХДЕ?????](NormNaiveBiasClass/formula2.png?raw=true "Optional Title")
+
+А частичную плотность будем считать по формуле
+
+![ХДЕ?????](NormNaiveBiasClass/formula.png?raw=true "Optional Title")
+
+Пример:
+![ХДЕ?????](NormNaiveBiasClass/gif.gif?raw=true "Optional Title")
+![ХДЕ?????](NormNaiveBiasClass/tig_map.png?raw=true "Optional Title")
+
+```R
+#возвращает датафрейм с мат. ожиданиями
+#для всех признаков по всем классам
+calc_mu <- function (features) {
+  #features - датафрейм: вектора признаков - фактор классов
+  
+  #ответ
+  ans <- data.frame()
+  
+  #колличество признаков
+  l <- dim(features)[2]
+  
+  for(i in levels(features[, l])){
+    
+    #хранит признаки рассматриваемого класса
+    tmp_slice <- features[features[,l] == i, ]
+    
+    #колличество объектов рассматриваемого класса
+    m <- dim(tmp_slice)[1]
+    
+    #посчитанные мат ожидания для рассматриваемого класса
+    mus_for_one <- vector()
+    
+    for(j in 1:(l - 1)) {
+      mus_for_one <- cbind(mus_for_one, sum(tmp_slice[, j]) / m)
+    }
+    
+    ans <- rbind(ans, c(mus_for_one, i))
+  }
+  names(ans) <- names(features)
+  
+  return(ans)
+}
+
+#возвращает датафрейм средне квадратичных отклонений
+#для всех признаков по всем классам
+calc_sigma <- function (features) {
+  #features - датафрейм: вектора признаков - фактор классов
+  
+  #ответ
+  ans <- data.frame()
+  
+  #колличество признаков
+  l <- dim(features)[2]
+  
+  for(i in levels(features[, l])){
+    
+    #хранит признаки рассматриваемого класса
+    tmp_slice <- features[features[,l] == i, ]
+    
+    #колличество объектов рассматриваемого класса
+    m <- dim(tmp_slice)[1]
+    
+    #посчитанные мат ожидания для рассматриваемого класса
+    disp_for_one <- vector()
+    
+    for(j in 1:(l - 1)) {
+      #мат ожидание в квадрате
+      double_mu <- (sum(tmp_slice[, j]) / m) ^ 2
+      #мат ожидание от квадрата
+      mu_from_double <- (sum(tmp_slice[, j] ^ 2) / m)
+      
+      disp_for_one <- cbind(disp_for_one, sqrt(mu_from_double - double_mu))
+    }
+    
+    ans <- rbind(ans, c(disp_for_one, i))
+  }
+  
+  names(ans) <- names(features)
+  return(ans)
+}
+
+#возвращает датафрейм априорных вероятностей
+calc_aprior_prob <- function(features) {
+  m <- dim(features)[1]
+  l <- dim(features)[2]
+  
+  tb <- table(features[,l]) / m
+  
+  tb <- data.frame(tb)
+  ans <- tb[, 2:1]
+  names(ans) <- c("aprior", names(features)[l])
+  return(ans)
+}
+
+#формула плотности для одного признака
+#из класса для ннбс
+formula_tight <- function(Point, mu, tsigma) {
+  mu <- as.numeric(mu)
+  tsigma <- as.numeric(tsigma)
+  for_exp <- (Point - mu)^2
+  for_exp <- for_exp / (2 * tsigma ^ 2)
+  
+  #правая часть формулы
+  rpart <- exp(-for_exp)
+  
+  #левая часть формулы.
+  lpart <- 1 / (tsigma * sqrt(2 * pi))
+  
+  ans <- lpart * rpart
+  
+  return(ans)
+  
+}
+
+#возвращаем плотность для точки
+#для наивного байесовского классификатора
+calc_tight <- function(feature, tclass, tmus, ttsigmas) {
+  #feature - признаки, как строка дата фрейма
+  #tmus - датафрейм мат ожиданий
+  #ttsigmas - датафрейм среднеквадратичных отклонений
+  #tclass - класс, проверяющийся
+  
+  #колличество признаков
+  l <- dim(feature)[2]
+  
+  #выделить мат ожидание относящиеся к проеряемому классу
+  tl <- dim(tmus)[2]
+  mus <- tmus[tmus[, tl] == tclass, ]
+  
+  #выделить среднеквадратичные отклонения проверяемого класса
+  tl <-dim(ttsigmas)[2]
+  tsigmas <- ttsigmas[which(ttsigmas[,tl] == tclass) , ]
+  
+  
+  
+  #хранит суммы логарифмов плотностей
+  tight_sum <- 0
+  
+  for(i in 1:l) {
+    tmp <- formula_tight(feature[,i], mus[,i], tsigmas[,i])
+    tight_sum <- tight_sum + log(tmp)
+  }
+  
+  return(tight_sum)
+}
+
+#основной алгоритм наивного байеса.
+naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA) {
+  #x - объект для классификации
+  #y - выборка
+  #tmu - матожиданий предоставленные пользователем.
+  #ttsigma - сигмы предоставленные пользователем 
+  #taprior - априорные вероятности предоставленные пользователем
+  
+  mu <- NA #мат ожидания
+  tsigma <- NA #сигмы
+  aprior <- NA #априорные вероятности
+  lyambda <- NA #переменные штрафа за ошибку
+  # print("ALAHAMORA")
+  
+  #условия проверяющие дал ли пользователь какие-нибудь начальные данные
+  #если не дал, то высчитать самостоятельно
+  if(is.na(tmu) == FALSE) {
+    mu <- tmu
+  } else {
+    mu <- calc_mu(y)
+  }
+  
+  if(is.na(ttsigma) == FALSE) {
+    tsigma <- ttsigma 
+  } else {
+    tsigma <- calc_sigma(y)
+  }
+  
+  if(is.na(taprior) == FALSE) {
+    aprior <- taprior
+  } else {
+    aprior <- calc_aprior_prob(y)
+  }
+  
+  #использовать датафрейм мат ожиданий, чтобы посчитать колличество классов
+  l <- dim(mu)[1]
+  
+  if (is.na(tlyambda) == FALSE) {
+    lyambda <- tlyambda
+  } else {
+    lyambda <- seq(1, l)
+  }
+  
+  
+  maxv <- -1 #начальный максимальный результат
+  best_class <- aprior[1,2] #счтитаем клссом по умолчанию первый класс
+  
+  
+  
+  for (i in 1:l) {
+    tclass <- aprior[i,2]
+    aprior_part <- log(lyambda[i] * aprior[i, 1])
+    tight_part <- calc_tight(x, tclass, mu, tsigma)
+    
+    united_part <- aprior_part + tight_part
+    
+    if(united_part > maxv) {
+      maxv <- united_part
+      best_class <- tclass
+    }
+  }
+  
+  if(maxv < -0.9999) {
+    maxv <- 0.00001
+    best_class <- "na"
+  }
+  
+  ans <- c(best_class, as.numeric(maxv))
+  ans <- data.frame(ans[1], exp(as.numeric(maxv)))
+  names(ans) <- c("class", "tig")
+  
+  return(ans)
+}
+```
+
 [:arrow_up:Оглавление](#Оглавление)
