@@ -517,7 +517,7 @@ draw_norm_lines <- function(mu, E) {
 Пример:
 ![ХДЕ?????](NormNaiveBiasClass/gif.gif?raw=true "Optional Title")
 ![ХДЕ?????](NormNaiveBiasClass/tig_map.png?raw=true "Optional Title")
-![ХДЕ?????](NormNaiveBiasClass/stat_map.png?raw=true "Optional Title")
+![ХДЕ?????](NormNaiveBiasClass/map.png?raw=true "Optional Title")
 
 
 ```R
