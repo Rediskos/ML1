@@ -1,3 +1,4 @@
+library(lattice)
 
 #возвращает датафрейм с мат. ожиданиями
 #для всех признаков по всем классам
@@ -198,7 +199,6 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
   }
   
   if(maxv < -0.9999) {
-    maxv <- 0.00001
     best_class <- "na"
   }
   
@@ -243,15 +243,92 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
   }
   
   
-  print(tmps)
-  
+  # print(tmps)
   contourplot(tig ~ Petal.Length * Petal.Width, data = tmps, region = TRUE)
+  
+  return(tmps)
 }
+
+make_statistic_map <- function(point, classifier = naive_bias, color) {
+  #
+  
+  plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
+  
+  i = 1
+  j = 0
+  while (i <= 6.9) {
+    while(j < 2.5) {
+      p <- iris[1:4, 1:(dim(iris)[2] - 1)]
+      p[1, 3] = i
+      p[1, 4] = j
+      
+      p[2, 3] = i + 0.1
+      p[2, 4] = j
+      
+      p[3, 3] = i + 0.1
+      p[3, 4] = j + 0.1
+      
+      p[4, 3] = i
+      p[4, 4] = j + 0.1
+      
+      tt <- data.frame()
+      
+      t <- classifier(p[1,3:4], iris[,3:5])
+      tt <- rbind(tt, t)
+      
+      t <- classifier(p[2,3:4], iris[,3:5])
+      tt <- rbind(tt, t)
+      
+      
+      t <- classifier(p[3,3:4], iris[,3:5])
+      tt <- rbind(tt, t)
+      
+      
+      t <- classifier(p[4,3:4], iris[,3:5])
+      tt <- rbind(tt, t)
+      
+      p <- cbind(p, tt)
+      
+      classes <- table(p$class)
+      # points(p[,3], p[,4], pch = 21,
+      #        # bg = colors[p[, 5]],
+      #        col = colors[p$class], cex = as.numeric(p$tig) + 1)
+      
+      print("kek")
+      print(levels(p$class))
+      print(classes)
+      print(names(which.max(classes)))
+      
+      nmn <- names(which.max(classes))
+      print(color[nmn])
+      
+      # print(which(p$class == nmn)[1])
+      # 
+      # nmn <- which(p$class == nmn)[1]
+      print(nmn)
+      polygon(x = p$Petal.Length, y = p$Petal.Width, col = color[nmn])
+      j <- j + 1/10
+      
+    }
+    i <- i + 1/10
+    j <- 0
+  }
+}
+
 
 colors <- c("setosa" = "red", "versicolor" = "green3", 
             "virginica" = "blue", "na" = "yellow") 
 
-make_map(colors)
+
+colors <- c("1" = "red", "2" = "green3", 
+            "3" = "blue", "na" = "yellow") 
+
+aa <- make_map(colors)
+
+make_statistic_map(aa, color = colors)
+aa
+
+contourplot(class ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
 
 
 x <- iris[, c(1:(dim(iris)[2] - 1))]
