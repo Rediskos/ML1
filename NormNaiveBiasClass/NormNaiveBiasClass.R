@@ -203,7 +203,7 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
   }
   
   ans <- c(best_class, as.numeric(maxv))
-  ans <- data.frame(ans[1], ans[2])
+  ans <- data.frame(ans[1], exp(as.numeric(maxv)))
   names(ans) <- c("class", "tig")
   
   return(ans)
@@ -219,7 +219,6 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
   i = 0
   j = 0
   
-  nms <- names(x)
   
   tmps <- data.frame()
   
@@ -232,9 +231,9 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
       t <- classifier(p[,3:4], iris[,3:5])
       
       p <- cbind(p, t[1], t[2])
-      points(p[,3], p[,4], pch = 21,
-             # bg = colors[p[, 5]],
-             col = colors[p$class], cex = as.numeric(p$tig) + 1)
+      # points(p[,3], p[,4], pch = 21,
+      #        # bg = colors[p[, 5]],
+      #        col = colors[p$class], cex = as.numeric(p$tig) + 1)
       j <- j + 1/10
       
       tmps <- rbind(tmps, p)
@@ -243,10 +242,10 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
     j <- 0
   }
   
-  names(tmps) <- nms
   
+  print(tmps)
   
-  contourplot(tight ~ Petal.Length * Petal.Width, data = tmps, region = TRUE)
+  contourplot(tig ~ Petal.Length * Petal.Width, data = tmps, region = TRUE)
 }
 
 colors <- c("setosa" = "red", "versicolor" = "green3", 
