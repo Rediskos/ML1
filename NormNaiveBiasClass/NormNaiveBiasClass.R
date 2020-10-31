@@ -149,6 +149,7 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
   aprior <- NA #априорные вероятности
   lyambda <- NA #переменные штрафа за ошибку
   # print("ALAHAMORA")
+  lvls <- levels(iris$Species)
   
   #условия проверяющие дал ли пользователь какие-нибудь начальные данные
   #если не дал, то высчитать самостоятельно
@@ -198,12 +199,10 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
     }
   }
   
-  if(maxv < -0.9999) {
-    best_class <- "na"
-  }
+  maxv = exp(maxv)
   
   ans <- c(best_class, as.numeric(maxv))
-  ans <- data.frame(ans[1], exp(as.numeric(maxv)))
+  ans <- data.frame(ans[1], maxv)
   names(ans) <- c("class", "tig")
   
   return(ans)
@@ -212,9 +211,11 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
 make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
   #
   
-  plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
-  points(iris[, 3:4], pch = 21, bg = colors[iris$Species], col 
-         = colors[iris$Species], asp = 1)
+  # plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
+  # points(iris[, 3:4], pch = 22,
+  #        bg = colors[iris$Species],
+  #        col 
+  #        = colors[iris$Species], asp = 1)
   
   i = 0
   j = 0
@@ -231,9 +232,9 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
       t <- classifier(p[,3:4], iris[,3:5])
       
       p <- cbind(p, t[1], t[2])
-      # points(p[,3], p[,4], pch = 21,
+      # points(p[,3], p[,4], pch = 22,
       #        # bg = colors[p[, 5]],
-      #        col = colors[p$class], cex = as.numeric(p$tig) + 1)
+      #        col = colors[p$class], alpha = p[,6])
       j <- j + 1/10
       
       tmps <- rbind(tmps, p)
@@ -244,8 +245,8 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
   
   
   # print(tmps)
-  contourplot(tig ~ Petal.Length * Petal.Width, data = tmps, region = TRUE)
-  
+  # contourplot(tig ~ Petal.Length * Petal.Width, data = tmps, region = TRUE)
+  # 
   return(tmps)
 }
 
@@ -254,7 +255,7 @@ make_statistic_map <- function(point, classifier = naive_bias, color) {
   
   plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
   
-  i = 1
+  i = 0
   j = 0
   while (i <= 6.9) {
     while(j < 2.5) {
@@ -294,18 +295,18 @@ make_statistic_map <- function(point, classifier = naive_bias, color) {
       #        # bg = colors[p[, 5]],
       #        col = colors[p$class], cex = as.numeric(p$tig) + 1)
       
-      print("kek")
-      print(levels(p$class))
-      print(classes)
-      print(names(which.max(classes)))
+      # print("kek")
+      # print(levels(p$class))
+      # print(classes)
+      # print(names(which.max(classes)))
       
       nmn <- names(which.max(classes))
-      print(color[nmn])
+      # print(color[nmn])
       
       # print(which(p$class == nmn)[1])
       # 
       # nmn <- which(p$class == nmn)[1]
-      print(nmn)
+      # print(nmn)
       polygon(x = p$Petal.Length, y = p$Petal.Width, col = color[nmn])
       j <- j + 1/10
       
@@ -320,20 +321,22 @@ colors <- c("setosa" = "red", "versicolor" = "green3",
             "virginica" = "blue", "na" = "yellow") 
 
 
-colors <- c("1" = "red", "2" = "green3", 
+colors2 <- c("1" = "red", "2" = "green3", 
             "3" = "blue", "na" = "yellow") 
+make_map(colors)
 
 aa <- make_map(colors)
 
-make_statistic_map(aa, color = colors)
+make_statistic_map(aa, color = colors2)
 aa
 
 contourplot(class ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
 
 
-x <- iris[, c(1:(dim(iris)[2] - 1))]
+x <- iris[1, ]
+x[,3] = 3.1
+x[,4] = 1.2
 x
-
 # plot(iris[, 3:4], pch = 21, bg = colors[iris$Species], col 
 #      = colors[iris$Species], asp = 1)
 # 
@@ -345,6 +348,8 @@ ans <- data.frame()
 for(i in 1:dim(x)[1]) {
   ans <- rbind(ans, naive_bias(x[i, 3:4], iris[, 3:5]))
 }
+
+naive_bias(x[3:4], iris[, 3:5])
 
 str(ans)
 
