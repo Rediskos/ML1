@@ -201,6 +201,8 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
   
   maxv = exp(maxv)
   
+  best_class <- lvls[best_class]
+  
   ans <- c(best_class, as.numeric(maxv))
   ans <- data.frame(ans[1], maxv)
   names(ans) <- c("class", "tig")
@@ -328,6 +330,7 @@ make_map(colors)
 aa <- make_map(colors)
 
 make_statistic_map(aa, color = colors2)
+aa$class <- factor(aa$class)
 aa
 
 contourplot(class ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
