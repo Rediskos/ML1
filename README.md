@@ -921,6 +921,203 @@ PlugIn <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
 [:arrow_up:Оглавление](#Оглавление)
 
 ### LDF алгоритм
+Суть LDF алгоритма в эвристике которая говрит: предполагаем, что все ковариационные матрицы равны - при таком условии мы можем ограничится вычислением только одной ковариацинной матрицы. Тогда вполе можно оценить ковариационную матрицу по всем элементам обучающей выборки. В результате получим некую *среднюю* ковариационную матрицу, которая, в общем случае, повысит устойчивость алгоритма.
 
+LDF строит разделяющую пряму между классами.
 
+![ХДЕ?????](LDF/plot_zoom_not_norm.png?raw=true "Optional Title")
+
+Однако стоит учитывать, если формы классов сильно не похожи, эвристика может дать плохой результат.
+![ХДЕ?????](LDF/cant_be_pretty.png?raw=true "Optional Title")
+
+```R
+calc_prob_rasp <- function(x, mu, E) {
+  #x - точка как вектор
+  #mu - мат ожидание как вектор
+  #E - ковариационная матрица
+  
+  mu <- as.numeric(mu)
+  x <- as.numeric(x)
+  t_mu <- t(mu)
+  t_x <- t(x)
+  solve_E <- solve(E)
+  left_part <- (t_mu %*% solve_E %*% mu) / (-2)
+  
+  right_part <- t_x %*% solve_E %*% mu 
+  
+  ans <- left_part + right_part
+  return(ans)
+}
+
+#возвращает датафрейм с мат. ожиданиями
+#для всех признаков по всем классам
+calc_mu <- function (features) {
+  #features - датафрейм: вектора признаков - фактор классов
+  
+  #ответ
+  ans <- data.frame()
+  
+  #колличество признаков
+  l <- dim(features)[2]
+  
+  for(i in levels(features[, l])){
+    
+    #хранит признаки рассматриваемого класса
+    tmp_slice <- features[features[,l] == i, ]
+    
+    #колличество объектов рассматриваемого класса
+    m <- dim(tmp_slice)[1]
+    
+    #посчитанные мат ожидания для рассматриваемого класса
+    mus_for_one <- vector()
+    
+    for(j in 1:(l - 1)) {
+      mus_for_one <- cbind(mus_for_one, sum(tmp_slice[, j]) / m)
+    }
+    
+    ans <- rbind(ans, c(mus_for_one, i))
+  }
+  names(ans) <- names(features)
+  
+  return(ans)
+}
+
+#возвращает ковариационную матрицу по признакам
+#и мат ожиданию класса
+calc_cov_matr <- function(y, tmu, tl) {
+  #features - датафрейм признаков где последний столбец класс
+  #tmu - мат ожидание, однострочная матрица
+  
+  l <- dim(y)[2] #количество разных признаков
+  m <- dim(y)[1] #колличество признаков
+  ans <- matrix(0, nrow = l - 1, ncol = l - 1) #матрица ответ
+  
+  for(j in levels(y[, l])) {
+    same_class <- which(y[, l] == j) #найти индексы объектов одинакового класса
+    yj <- y[same_class, ] #взять объекты одинакового класса из выборки
+    tm = dim(yj)[1]
+    
+    mu_for_j <- which(tmu[, l] == j)#индекс мат ожидания класса j
+    # E <- calc_cov_matr(yj, mu[mu_for_j, ], yl) #посчитать ковариационную матрицу
+    
+    
+    
+    num_mu <- as.numeric(tmu[mu_for_j , 1:l - 1])
+    mu <- t(as.matrix(num_mu))
+    
+    for (i in 1:tm) {
+      x_i <- as.matrix(yj[i, 1:l-1], nrow = 1)
+      cov_mt_xi <- t(x_i - mu) %*% (x_i - mu)
+      ans <- ans + cov_mt_xi
+    }
+    
+    ans <- ans / (tl - tm)
+    
+  }
+  
+  
+  # ans <- ans / tl #поправка на смещённость
+  
+  return(ans)
+}
+
+calc_aprior_prob <- function(features) {
+  m <- dim(features)[1]
+  l <- dim(features)[2]
+  
+  tb <- table(features[,l]) / m
+  
+  tb <- data.frame(tb)
+  ans <- tb[, 2:1]
+  names(ans) <- c("aprior", names(features)[l])
+  return(ans)
+}
+
+#основная функция PlugIn алгоритма
+#возвращает датафрейм ответов: класс ~ его плотность для объекта
+LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
+  #x - классифицируемые объекты
+  #y - классифицирующая выборка
+  
+  
+  xl <- dim(x)[1] #колличество классифицирующихся объектов
+  yl <- dim(y)[1] #колличество объектов выборки
+  yc <- dim(y)[2] #колличество столбцов выборкиS
+  
+  mu <- NA #мат ожидания
+  aprior <- NA #априорные вероятности
+  lyambda <- NA #переменные штрафа за ошибку
+  
+  #условия проверяющие дал ли пользователь какие-нибудь начальные данные
+  #если не дал, то высчитать самостоятельно
+  if(is.na(tmu) == FALSE) {
+    mu <- tmu
+  } else {
+    mu <- calc_mu(y)
+  }
+  
+  if(is.na(taprior) == FALSE) {
+    aprior <- taprior
+  } else {
+    aprior <- calc_aprior_prob(y)
+  }
+  
+  #использовать датафрейм мат ожиданий, чтобы посчитать колличество классов
+  l <- dim(mu)[1]
+  
+  if (is.na(tlyambda) == FALSE) {
+    lyambda <- tlyambda
+  } else {
+    lyambda <- rep(1, l)
+  }
+  
+  tmp_class <- y[1, yc]
+  all_tmp_class <- which(y[, yc] == tmp_class)
+  E <- calc_cov_matr(y, mu, yl)#так как все ковариацинные матрицы равны
+  
+  names(lyambda) <- levels(y[, yc])
+  
+  
+  ans <- data.frame() #
+  
+  #цикл классификации
+  for (i in 1:xl) {
+    x_i <- x[i, ] #взять i-тый елемент для классификации
+    
+    maxv <- -1e6 #максимальная плонтость
+    best_class <- y[1, yc] #класс с максимальной плотностью
+    
+    #вложенный цикл классифицирующий один объект
+    #идёт по классам
+    for(j in levels(y[, yc])) {
+      same_class <- which(y[, yc] == j) #найти индексы объектов одинакового класса
+      yj <- y[same_class, ] #взять объекты одинакового класса из выборки
+      
+      mu_for_j <- which(mu[, yc] == j)#индекс мат ожидания класса j
+      # E <- calc_cov_matr(yj, mu[mu_for_j, ], yl) #посчитать ковариационную матрицу
+      
+      lyambda_j <- lyambda[j] #взять ошибку для класса j
+      for_aprior <- which(aprior[, 2] == j) 
+      aprior_j <- aprior[for_aprior, 1] # взять априорную вероятность для класса j
+      tig <- calc_prob_rasp(x_i, mu = mu[mu_for_j, 1:yc-1], E = E) #посчитать плотность
+      
+      tmp_ans <-  log(lyambda_j * aprior_j) + tig #вероятный ответ
+      
+      #проверка лучше ли вероятный ответ чем предыдущий лучший
+      if(tmp_ans > maxv) {
+        maxv <- tmp_ans
+        best_class <- j
+      }
+    }
+    
+    best_ans_for_xi <- c(best_class, as.numeric(maxv)) 
+    ans <- rbind(ans, best_ans_for_xi)
+  }
+  
+  name_class_col <- names(y)[yc]
+  names(ans) <- c(name_class_col, "tig")
+  return(ans)  
+}
+
+```
 [:arrow_up:Оглавление](#Оглавление)
