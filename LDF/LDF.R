@@ -4,16 +4,15 @@ calc_prob_rasp <- function(x, mu, E) {
   #E - ковариационная матрица
   
   mu <- as.numeric(mu)
-  x_mu <- as.matrix(x - mu)
-  t_x_mu <- t(x_mu)
+  x <- as.numeric(x)
+  t_mu <- t(mu)
+  t_x <- t(x)
   solve_E <- solve(E)
-  for_exp <- (x_mu %*% solve_E %*% t_x_mu) / (-2)
-  nominator <- exp(for_exp)
+  left_part <- (t_mu %*% solve_E %*% mu) / (-2)
   
-  for_sqrt <- (2 * pi) ^ dim(E)[1] * det(E)
-  denominator <- sqrt(for_sqrt)
+  right_part <- t_x %*% solve_E %*% mu 
   
-  ans <- nominator / denominator
+  ans <- left_part + right_part
   return(ans)
 }
 
@@ -52,23 +51,39 @@ calc_mu <- function (features) {
 
 #возвращает ковариационную матрицу по признакам
 #и мат ожиданию класса
-calc_cov_matr <- function(features, mu, tl) {
+calc_cov_matr <- function(y, tmu, tl) {
   #features - датафрейм признаков где последний столбец класс
-  #mu - мат ожидание, однострочная матрица
+  #tmu - мат ожидание, однострочная матрица
   
-  l <- dim(features)[2] #количество разных признаков
-  m <- dim(features)[1] #колличество признаков
-  
-  num_mu <- as.numeric(mu[1 , 1:l - 1])
-  mu <- t(as.matrix(num_mu))
+  l <- dim(y)[2] #количество разных признаков
+  m <- dim(y)[1] #колличество признаков
   ans <- matrix(0, nrow = l - 1, ncol = l - 1) #матрица ответ
   
-  for (i in 1:m) {
-    x_i <- as.matrix(features[i, 1:l-1], nrow = 1)
-    cov_mt_xi <- t(x_i - mu) %*% (x_i - mu)
-    ans <- ans + cov_mt_xi
+  for(j in levels(y[, l])) {
+    same_class <- which(y[, l] == j) #найти индексы объектов одинакового класса
+    yj <- y[same_class, ] #взять объекты одинакового класса из выборки
+    tm = dim(yj)[1]
+    
+    mu_for_j <- which(tmu[, l] == j)#индекс мат ожидания класса j
+    # E <- calc_cov_matr(yj, mu[mu_for_j, ], yl) #посчитать ковариационную матрицу
+    
+    
+    
+    num_mu <- as.numeric(tmu[mu_for_j , 1:l - 1])
+    mu <- t(as.matrix(num_mu))
+    
+    for (i in 1:tm) {
+      x_i <- as.matrix(yj[i, 1:l-1], nrow = 1)
+      cov_mt_xi <- t(x_i - mu) %*% (x_i - mu)
+      ans <- ans + cov_mt_xi
+    }
+    
+    ans <- ans / (tl - tm)
+    
   }
-  ans <- ans / (tl - l)
+  
+  
+  # ans <- ans / tl #поправка на смещённость
   
   return(ans)
 }
@@ -123,6 +138,10 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
     lyambda <- rep(1, l)
   }
   
+  tmp_class <- y[1, yc]
+  all_tmp_class <- which(y[, yc] == tmp_class)
+  E <- calc_cov_matr(y, mu, yl)#так как все ковариацинные матрицы равны
+  
   names(lyambda) <- levels(y[, yc])
   
   
@@ -142,14 +161,14 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
       yj <- y[same_class, ] #взять объекты одинакового класса из выборки
       
       mu_for_j <- which(mu[, yc] == j)#индекс мат ожидания класса j
-      E <- calc_cov_matr(yj, mu[mu_for_j, ], yl) #посчитать ковариационную матрицу
+      # E <- calc_cov_matr(yj, mu[mu_for_j, ], yl) #посчитать ковариационную матрицу
       
       lyambda_j <- lyambda[j] #взять ошибку для класса j
       for_aprior <- which(aprior[, 2] == j) 
       aprior_j <- aprior[for_aprior, 1] # взять априорную вероятность для класса j
       tig <- calc_prob_rasp(x_i, mu = mu[mu_for_j, 1:yc-1], E = E) #посчитать плотность
       
-      tmp_ans <- lyambda_j * aprior_j * tig #вероятный ответ
+      tmp_ans <-  log(lyambda_j * aprior_j) + tig #вероятный ответ
       
       #проверка лучше ли вероятный ответ чем предыдущий лучший
       if(tmp_ans > maxv) {
@@ -168,42 +187,45 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
 }
 
 
-make_map <- function(classifier = LDF) {
+make_map <- function(y, params, classifier = LDF) {
   
   i = 0
   j = 0
   
   
   tmps <- data.frame()
-  
-  while (i <= 7) {
-    while(j < 2.6) {
-      p <- iris[1, 1:(dim(iris)[2] - 1)]
-      p[3] = i
-      p[4] = j
+  rem <- names(y)
+  r2 <- NA
+  while (i <= 1) {
+    while(j < 1) {
+      p <- y[1, 1:(dim(y)[2] - 1)]
+      p[, params] <- c(i, j)
       
-      t <- classifier(p[,3:4], iris[,3:5])
+      ty <- cbind(y[, params], y[, dim(y)[2]])
       
+      t <- classifier(p[,params], ty)
+      r2 <- names(t[2])
       p <- cbind(p, t[1], t[2])
       # points(p[,3], p[,4], pch = 22,
       #        # bg = colors[p[, 5]],
       #        col = colors[p$class], alpha = p[,6])
-      j <- j + 1/10
+      j <- j + 0.05
       
       tmps <- rbind(tmps, p)
     }
-    i <- i + 1/10
+    i <- i + 0.05
     j <- 0
   }
   
   
-  
+  names(tmps) <- c(rem, r2)
   return(tmps)
 }
-
+tmap <- make_map(lft, 1:2)
+tmap[1,]
 
 draw_map <- function(xx, yy) {
-  
+
   xc <- dim(xx)[2]
   class <- levels(xx[, xc])
   
@@ -218,19 +240,40 @@ draw_map <- function(xx, yy) {
   #   scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")+
   #   labs(title = "Карта классификации LDF алгоритма: ирисы Фишера") 
   
-  ggplot(data = xx, aes(x = Petal.Length, y = Petal.Width)) +
-    geom_point(data = yy, shape = 22, aes(fill = Species), size = 2, stroke = 0) +
-    scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
+  # ggplot(data = xx, aes(x = Petal.Length, y = Petal.Width)) +
+  #   geom_point(data = yy, shape = 22, aes(fill = Species), size = 2, stroke = 0) +
+  #   scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
+  #   
+  #   geom_point(shape = 22, aes(alpha = tig, fill = Species), 
+  #              size = 4, stroke = 0)+ 
+  #   scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
+  #   scale_alpha_continuous(name = "Плотность нормированная сигмоидой") + 
+  #   # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")+
+  #   
+  #   labs(title = "Карта классификации LDF алгоритма: ирисы Фишера") 
+  
+  ggplot(data = xx, aes(x = first, y = second)) +
     
-    geom_point(shape = 22, aes(alpha = tig, fill = Species), 
-               size = 4, stroke = 0)+ 
-    scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
-    scale_alpha_continuous(name = "Плотность нормированная сигмоидой") + 
+    geom_point(shape = 22, aes(alpha = tig, fill = class), 
+               size = 5, stroke = 0)+ 
+    scale_fill_manual(values = c("red", "green"), name = "Класс")+
+    scale_alpha_continuous(name = "Плотность") +
+    # scale_alpha_continuous(name = "Плотность нормированная сигмоидой") + 
+    geom_point(data = yy, shape = 22, aes(fill = class), size = 2, stroke = 2) +
+    scale_fill_manual(values = c("red", "green"), name = "Класс")+
+    
+    
     # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")+
     
-    labs(title = "Карта классификации LDF алгоритма: ирисы Фишера") 
+    labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера") 
     
 }
+# 
+# tmap$tig <- sigmoid(as.numeric(tmap$tig))
+tmap$tig <- as.numeric(tmap$tig)
+draw_map(tmap, lft)
+# 
+# tmap
 
 sigmoid = function(x) {
   1 / (1 + exp(-x))
@@ -245,19 +288,21 @@ sigmoid = function(x) {
 # ans
 
 
-# aa <- make_map()
-# 
-# str(aa)
+# aa <- make_
+# str(aa)map()
+#
 # 
 # contourplot(tig ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
+# 
+# options(device = "windows")
+# dev.cur()
+# draw_map(aa, iris)
+# 
+# aa <- make_map(iris, 3:4)
+# aa
+# bb <- aa
+# bb$tig <- as.numeric(aa$tig)
+# bb$tig <- sigmoid(bb$tig)
+# bb
+# draw_map(bb, iris)
 
-options(device = "windows")
-dev.cur()
-draw_map(aa, iris)
-
-aa <- make_map()
-aa
-bb <- aa
-bb$tig <- sigmoid(as.numeric(aa$tig))
-bb
-draw_map(bb, iris)

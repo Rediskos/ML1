@@ -1,3 +1,5 @@
+#посчитать плотность в точке
+#возвращает double
 calc_prob_rasp <- function(x, mu, E) {
   #x - точка как вектор
   #mu - мат ожидание как вектор
@@ -168,35 +170,64 @@ PlugIn <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
 }
 
 
-make_map <- function(classifier = PlugIn) {
+make_map <- function(y, params, classifier = PlugIn) {
+  # 
+  # i = 0
+  # j = 0
+  # 
+  # 
+  # tmps <- data.frame()
+  # 
+  # while (i <= 7) {
+  #   while(j < 2.6) {
+  #     p <- iris[1, 1:(dim(iris)[2] - 1)]
+  #     p[3] = i
+  #     p[4] = j
+  #     
+  #     t <- classifier(p[,3:4], iris[,3:5])
+  #     
+  #     p <- cbind(p, t[1], t[2])
+  #     # points(p[,3], p[,4], pch = 22,
+  #     #        # bg = colors[p[, 5]],
+  #     #        col = colors[p$class], alpha = p[,6])
+  #     j <- j + 1/10
+  #     
+  #     tmps <- rbind(tmps, p)
+  #   }
+  #   i <- i + 1/10
+  #   j <- 0
+  # }
   
   i = 0
   j = 0
   
   
   tmps <- data.frame()
-  
-  while (i <= 7) {
-    while(j < 2.6) {
-      p <- iris[1, 1:(dim(iris)[2] - 1)]
-      p[3] = i
-      p[4] = j
+  rem <- names(y)
+  r2 <- NA
+  while (i <= 1) {
+    while(j < 1) {
+      p <- y[1, 1:(dim(y)[2] - 1)]
+      p[, params] <- c(i, j)
       
-      t <- classifier(p[,3:4], iris[,3:5])
+      ty <- cbind(y[, params], y[, dim(y)[2]])
       
+      t <- classifier(p[,params], ty)
+      r2 <- names(t[2])
       p <- cbind(p, t[1], t[2])
       # points(p[,3], p[,4], pch = 22,
       #        # bg = colors[p[, 5]],
       #        col = colors[p$class], alpha = p[,6])
-      j <- j + 1/10
+      j <- j + 0.05
       
       tmps <- rbind(tmps, p)
     }
-    i <- i + 1/10
+    i <- i + 0.05
     j <- 0
   }
   
   
+  names(tmps) <- c(rem, r2)
   
   return(tmps)
 }
@@ -240,8 +271,13 @@ ans
 
 
 aa <- make_map()
-aa
+str(aa)
+iris
+aa[which(aa$Species == "virginica"), ]
 
 contourplot(tig ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
 
-draw_map(aa, iris)
+
+bb <- aa
+bb$tig <- sigmoid(as.numeric(aa$tig))
+draw_map(bb, iris)
