@@ -210,7 +210,7 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
   return(ans)
 }
 
-make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
+make_map <- function(colors, classifier = naive_bias, lyambdas = NA, k = NA, q = NA) {
   #
   
   # plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
@@ -231,7 +231,7 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
       p[3] = i
       p[4] = j
       
-      t <- classifier(p[,3:4], iris[,3:5])
+      t <- classifier(p[,3:4], iris[,3:5], tlyambda = lyambdas)
       
       p <- cbind(p, t[1], t[2])
       # points(p[,3], p[,4], pch = 22,
@@ -252,70 +252,35 @@ make_map <- function(colors, classifier = naive_bias, k = NA, q = NA) {
   return(tmps)
 }
 
-make_statistic_map <- function(point, classifier = naive_bias, color) {
-  #
+draw_map <- function(xx, yy) {
   
-  plot(1, type="n", xlab="", ylab="", xlim=c(0, 7), ylim=c(0, 2.5))
+  xc <- dim(xx)[2]
+  clas <- names(xx[, xc - 1])
   
-  i = 0
-  j = 0
-  while (i <= 6.9) {
-    while(j < 2.5) {
-      p <- iris[1:4, 1:(dim(iris)[2] - 1)]
-      p[1, 3] = i
-      p[1, 4] = j
-      
-      p[2, 3] = i + 0.1
-      p[2, 4] = j
-      
-      p[3, 3] = i + 0.1
-      p[3, 4] = j + 0.1
-      
-      p[4, 3] = i
-      p[4, 4] = j + 0.1
-      
-      tt <- data.frame()
-      
-      t <- classifier(p[1,3:4], iris[,3:5])
-      tt <- rbind(tt, t)
-      
-      t <- classifier(p[2,3:4], iris[,3:5])
-      tt <- rbind(tt, t)
-      
-      
-      t <- classifier(p[3,3:4], iris[,3:5])
-      tt <- rbind(tt, t)
-      
-      
-      t <- classifier(p[4,3:4], iris[,3:5])
-      tt <- rbind(tt, t)
-      
-      p <- cbind(p, tt)
-      
-      classes <- table(p$class)
-      # points(p[,3], p[,4], pch = 21,
-      #        # bg = colors[p[, 5]],
-      #        col = colors[p$class], cex = as.numeric(p$tig) + 1)
-      
-      # print("kek")
-      # print(levels(p$class))
-      # print(classes)
-      # print(names(which.max(classes)))
-      
-      nmn <- names(which.max(classes))
-      # print(color[nmn])
-      
-      # print(which(p$class == nmn)[1])
-      # 
-      # nmn <- which(p$class == nmn)[1]
-      # print(nmn)
-      polygon(x = p$Petal.Length, y = p$Petal.Width, col = color[nmn])
-      j <- j + 1/10
-      
-    }
-    i <- i + 1/10
-    j <- 0
-  }
+  # ggplot(data = xx, aes(x = Petal.Length, y = Petal.Width)) +
+  #   
+  #   geom_point(data = yy, shape = 22, aes(fill = Species), size = 2, stroke = 2) +
+  #   scale_fill_manual(values = c("red", "green", "blue"),
+  #                     name = "Выборка")+
+  #   
+  #   geom_point(shape = 22, aes(alpha = tig, col = class), 
+  #              size = 2, stroke = 2)+ 
+  #   scale_color_manual(values = c("red", "green", "blue"), name = "Классифицирован")+
+  #   scale_alpha_continuous(name = "Плотность") + 
+  #   labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера")
+  
+  ggplot(data = xx, aes(x = Petal.Length, y = Petal.Width)) +
+    geom_point(data = yy, shape = 22, aes(fill = Species), size = 2, stroke = 0) +
+    scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
+    
+    geom_point(shape = 22, aes(alpha = tig, fill = class), 
+               size = 4, stroke = 0)+ 
+    scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
+    scale_alpha_continuous(name = "Плотность нормированная сигмоидой") + 
+    # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")+
+    
+    labs(title = "Карта классификации наивного нормального
+         байесовского классификатора: ирисы Фишера, lambda = (1,10,20)") 
 }
 
 
@@ -327,13 +292,21 @@ colors2 <- c("1" = "red", "2" = "green3",
             "3" = "blue", "na" = "yellow") 
 make_map(colors)
 
-aa <- make_map(colors)
+aa <- make_map(colors, lyambdas = c(1,10,20))
+
+aa
+
+bb <- aa
+bb[1,]
+bb$tig <- as.numeric(aa$tig)
+
+draw_map(bb, iris)
 
 make_statistic_map(aa, color = colors2)
 aa$class <- factor(aa$class)
 aa
 
-contourplot(class ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
+contourplot(tig ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
 
 
 x <- iris[1, ]

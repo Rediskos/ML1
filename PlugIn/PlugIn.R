@@ -205,8 +205,8 @@ make_map <- function(y, params, classifier = PlugIn) {
   tmps <- data.frame()
   rem <- names(y)
   r2 <- NA
-  while (i <= 1) {
-    while(j < 1) {
+  while (i <= 2) {
+    while(j < 2) {
       p <- y[1, 1:(dim(y)[2] - 1)]
       p[, params] <- c(i, j)
       
