@@ -12,6 +12,8 @@
 1. [Байесовские алгоритмы классификации](#Байесовские-алгоритмы-классификации)
     1. [Линии уровня нормального распределения](#Линии-уровня-нормального-распределения)
     2. [Нормальный наивный байесовский классификатор](#Нормальный-наивный-байесовский-классификатор)
+    3. [PlugIn алгоритм](#PlugIn-алгоритм)
+    4. [LDF алгоритм](#LDF-алгоритм)
     
 ## Метрические алгоритмы
 [:arrow_up:Оглавление](#Оглавление)
@@ -515,148 +517,10 @@ draw_norm_lines <- function(mu, E) {
 ![ХДЕ?????](NormNaiveBiasClass/formula.png?raw=true "Optional Title")
 
 Пример:
-![ХДЕ?????](NormNaiveBiasClass/gif.gif?raw=true "Optional Title")
-![ХДЕ?????](NormNaiveBiasClass/tig_map.png?raw=true "Optional Title")
 ![ХДЕ?????](NormNaiveBiasClass/map.png?raw=true "Optional Title")
 
 
 ```R
-#возвращает датафрейм с мат. ожиданиями
-#для всех признаков по всем классам
-calc_mu <- function (features) {
-  #features - датафрейм: вектора признаков - фактор классов
-  
-  #ответ
-  ans <- data.frame()
-  
-  #колличество признаков
-  l <- dim(features)[2]
-  
-  for(i in levels(features[, l])){
-    
-    #хранит признаки рассматриваемого класса
-    tmp_slice <- features[features[,l] == i, ]
-    
-    #колличество объектов рассматриваемого класса
-    m <- dim(tmp_slice)[1]
-    
-    #посчитанные мат ожидания для рассматриваемого класса
-    mus_for_one <- vector()
-    
-    for(j in 1:(l - 1)) {
-      mus_for_one <- cbind(mus_for_one, sum(tmp_slice[, j]) / m)
-    }
-    
-    ans <- rbind(ans, c(mus_for_one, i))
-  }
-  names(ans) <- names(features)
-  
-  return(ans)
-}
-
-#возвращает датафрейм средне квадратичных отклонений
-#для всех признаков по всем классам
-calc_sigma <- function (features) {
-  #features - датафрейм: вектора признаков - фактор классов
-  
-  #ответ
-  ans <- data.frame()
-  
-  #колличество признаков
-  l <- dim(features)[2]
-  
-  for(i in levels(features[, l])){
-    
-    #хранит признаки рассматриваемого класса
-    tmp_slice <- features[features[,l] == i, ]
-    
-    #колличество объектов рассматриваемого класса
-    m <- dim(tmp_slice)[1]
-    
-    #посчитанные мат ожидания для рассматриваемого класса
-    disp_for_one <- vector()
-    
-    for(j in 1:(l - 1)) {
-      #мат ожидание в квадрате
-      double_mu <- (sum(tmp_slice[, j]) / m) ^ 2
-      #мат ожидание от квадрата
-      mu_from_double <- (sum(tmp_slice[, j] ^ 2) / m)
-      
-      disp_for_one <- cbind(disp_for_one, sqrt(mu_from_double - double_mu))
-    }
-    
-    ans <- rbind(ans, c(disp_for_one, i))
-  }
-  
-  names(ans) <- names(features)
-  return(ans)
-}
-
-#возвращает датафрейм априорных вероятностей
-calc_aprior_prob <- function(features) {
-  m <- dim(features)[1]
-  l <- dim(features)[2]
-  
-  tb <- table(features[,l]) / m
-  
-  tb <- data.frame(tb)
-  ans <- tb[, 2:1]
-  names(ans) <- c("aprior", names(features)[l])
-  return(ans)
-}
-
-#формула плотности для одного признака
-#из класса для ннбс
-formula_tight <- function(Point, mu, tsigma) {
-  mu <- as.numeric(mu)
-  tsigma <- as.numeric(tsigma)
-  for_exp <- (Point - mu)^2
-  for_exp <- for_exp / (2 * tsigma ^ 2)
-  
-  #правая часть формулы
-  rpart <- exp(-for_exp)
-  
-  #левая часть формулы.
-  lpart <- 1 / (tsigma * sqrt(2 * pi))
-  
-  ans <- lpart * rpart
-  
-  return(ans)
-  
-}
-
-#возвращаем плотность для точки
-#для наивного байесовского классификатора
-calc_tight <- function(feature, tclass, tmus, ttsigmas) {
-  #feature - признаки, как строка дата фрейма
-  #tmus - датафрейм мат ожиданий
-  #ttsigmas - датафрейм среднеквадратичных отклонений
-  #tclass - класс, проверяющийся
-  
-  #колличество признаков
-  l <- dim(feature)[2]
-  
-  #выделить мат ожидание относящиеся к проеряемому классу
-  tl <- dim(tmus)[2]
-  mus <- tmus[tmus[, tl] == tclass, ]
-  
-  #выделить среднеквадратичные отклонения проверяемого класса
-  tl <-dim(ttsigmas)[2]
-  tsigmas <- ttsigmas[which(ttsigmas[,tl] == tclass) , ]
-  
-  
-  
-  #хранит суммы логарифмов плотностей
-  tight_sum <- 0
-  
-  for(i in 1:l) {
-    tmp <- formula_tight(feature[,i], mus[,i], tsigmas[,i])
-    tight_sum <- tight_sum + log(tmp)
-  }
-  
-  return(tight_sum)
-}
-
 #основной алгоритм наивного байеса.
 naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA) {
   #x - объект для классификации
@@ -670,6 +534,7 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
   aprior <- NA #априорные вероятности
   lyambda <- NA #переменные штрафа за ошибку
   # print("ALAHAMORA")
+  lvls <- levels(iris$Species)
   
   #условия проверяющие дал ли пользователь какие-нибудь начальные данные
   #если не дал, то высчитать самостоятельно
@@ -719,17 +584,213 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
     }
   }
   
-  if(maxv < -0.9999) {
-    maxv <- 0.00001
-    best_class <- "na"
-  }
+  maxv = exp(maxv)
+  
+  best_class <- lvls[best_class]
   
   ans <- c(best_class, as.numeric(maxv))
-  ans <- data.frame(ans[1], exp(as.numeric(maxv)))
+  ans <- data.frame(ans[1], maxv)
   names(ans) <- c("class", "tig")
   
   return(ans)
 }
 ```
+[:arrow_up:Оглавление](#Оглавление)
 
+### PlugIn алгоритм
+Оценим ковариационную матрицу и вектор мат ожиданий
+![ХДЕ?????](PlugIn/formul.png?raw=true "Optional Title").
+Полученные оценки подставим в оптимальный байесовский классификатор и получим PlugIn алгоритм. Собственоо поэтому он и называется "подстановочным".
+
+![ХДЕ?????](PlugIn/ae37300c-4455-4b98-85c2-245c6de28c35.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/8e06689c-1842-4357-8003-abab9fa2caa7.png?raw=true "Optional Title")
+
+![ХДЕ?????](PlugIn/pretty.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/pretty3.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/pretty4.png?raw=true "Optional Title")
+
+Код очень похож на наивный нормальный байесовский классификатор собственно потому, как нбк является подвидом PlugIn.
+```R
+#основная функция PlugIn алгоритма
+#возвращает датафрейм ответов: класс ~ его плотность для объекта
+PlugIn <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
+  #x - классифицируемые объекты
+  #y - классифицирующая выборка
+  
+  
+  xl <- dim(x)[1] #колличество классифицирующихся объектов
+  yl <- dim(y)[1] #колличество объектов выборки
+  yc <- dim(y)[2] #колличество столбцов выборкиS
+  
+  mu <- NA #мат ожидания
+  aprior <- NA #априорные вероятности
+  lyambda <- NA #переменные штрафа за ошибку
+  
+  #условия проверяющие дал ли пользователь какие-нибудь начальные данные
+  #если не дал, то высчитать самостоятельно
+  if(is.na(tmu) == FALSE) {
+    mu <- tmu
+  } else {
+    mu <- calc_mu(y)
+  }
+  
+  if(is.na(taprior) == FALSE) {
+    aprior <- taprior
+  } else {
+    aprior <- calc_aprior_prob(y)
+  }
+  
+  #использовать датафрейм мат ожиданий, чтобы посчитать колличество классов
+  l <- dim(mu)[1]
+  
+  if (is.na(tlyambda) == FALSE) {
+    lyambda <- tlyambda
+  } else {
+    lyambda <- rep(1, l)
+  }
+  
+  names(lyambda) <- levels(y[, yc])
+  
+  
+  ans <- data.frame() #
+  
+  #цикл классификации
+  for (i in 1:xl) {
+    x_i <- x[i, ] #взять i-тый елемент для классификации
+    
+    maxv <- -1e6 #максимальная плонтость
+    best_class <- y[1, yc] #класс с максимальной плотностью
+    
+    #вложенный цикл классифицирующий один объект
+    #идёт по классам
+    for(j in levels(y[, yc])) {
+      same_class <- which(y[, yc] == j) #найти индексы объектов одинакового класса
+      yj <- y[same_class, ] #взять объекты одинакового класса из выборки
+      
+      mu_for_j <- which(mu[, yc] == j)#индекс мат ожидания класса j
+      E <- calc_cov_matr(yj, mu[mu_for_j, ]) #посчитать ковариационную матрицу
+      
+      lyambda_j <- lyambda[j] #взять ошибку для класса j
+      for_aprior <- which(aprior[, 2] == j) 
+      aprior_j <- aprior[for_aprior, 1] # взять априорную вероятность для класса j
+      tig <- calc_prob_rasp(x_i, mu = mu[mu_for_j, 1:yc-1], E = E) #посчитать плотность
+      
+      tmp_ans <- lyambda_j * aprior_j * tig #вероятный ответ
+      
+      #проверка лучше ли вероятный ответ чем предыдущий лучший
+      if(tmp_ans > maxv) {
+        maxv <- tmp_ans
+        best_class <- j
+      }
+    }
+    
+    best_ans_for_xi <- c(best_class, maxv) 
+    ans <- rbind(ans, best_ans_for_xi)
+  }
+  
+  name_class_col <- names(y)[yc]
+  names(ans) <- c(name_class_col, "tig")
+  return(ans)  
+}
+```
+[:arrow_up:Оглавление](#Оглавление)
+
+### LDF алгоритм
+Суть LDF алгоритма в эвристике которая говрит: предполагаем, что все ковариационные матрицы равны - при таком условии мы можем ограничится вычислением только одной ковариацинной матрицы. Тогда вполе можно оценить ковариационную матрицу по всем элементам обучающей выборки. В результате получим некую *среднюю* ковариационную матрицу, которая, в общем случае, повысит устойчивость алгоритма.
+
+LDF строит разделяющую пряму между классами.
+
+![ХДЕ?????](LDF/plot_zoom_not_norm.png?raw=true "Optional Title")
+
+Однако стоит учитывать, если формы классов сильно не похожи, эвристика может дать плохой результат.
+![ХДЕ?????](LDF/cant_be_pretty.png?raw=true "Optional Title")
+
+```R
+#основная функция PlugIn алгоритма
+#возвращает датафрейм ответов: класс ~ его плотность для объекта
+LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
+  #x - классифицируемые объекты
+  #y - классифицирующая выборка
+  
+  
+  xl <- dim(x)[1] #колличество классифицирующихся объектов
+  yl <- dim(y)[1] #колличество объектов выборки
+  yc <- dim(y)[2] #колличество столбцов выборкиS
+  
+  mu <- NA #мат ожидания
+  aprior <- NA #априорные вероятности
+  lyambda <- NA #переменные штрафа за ошибку
+  
+  #условия проверяющие дал ли пользователь какие-нибудь начальные данные
+  #если не дал, то высчитать самостоятельно
+  if(is.na(tmu) == FALSE) {
+    mu <- tmu
+  } else {
+    mu <- calc_mu(y)
+  }
+  
+  if(is.na(taprior) == FALSE) {
+    aprior <- taprior
+  } else {
+    aprior <- calc_aprior_prob(y)
+  }
+  
+  #использовать датафрейм мат ожиданий, чтобы посчитать колличество классов
+  l <- dim(mu)[1]
+  
+  if (is.na(tlyambda) == FALSE) {
+    lyambda <- tlyambda
+  } else {
+    lyambda <- rep(1, l)
+  }
+  
+  tmp_class <- y[1, yc]
+  all_tmp_class <- which(y[, yc] == tmp_class)
+  E <- calc_cov_matr(y, mu, yl)#так как все ковариацинные матрицы равны
+  
+  names(lyambda) <- levels(y[, yc])
+  
+  
+  ans <- data.frame() #
+  
+  #цикл классификации
+  for (i in 1:xl) {
+    x_i <- x[i, ] #взять i-тый елемент для классификации
+    
+    maxv <- -1e6 #максимальная плонтость
+    best_class <- y[1, yc] #класс с максимальной плотностью
+    
+    #вложенный цикл классифицирующий один объект
+    #идёт по классам
+    for(j in levels(y[, yc])) {
+      same_class <- which(y[, yc] == j) #найти индексы объектов одинакового класса
+      yj <- y[same_class, ] #взять объекты одинакового класса из выборки
+      
+      mu_for_j <- which(mu[, yc] == j)#индекс мат ожидания класса j
+      # E <- calc_cov_matr(yj, mu[mu_for_j, ], yl) #посчитать ковариационную матрицу
+      
+      lyambda_j <- lyambda[j] #взять ошибку для класса j
+      for_aprior <- which(aprior[, 2] == j) 
+      aprior_j <- aprior[for_aprior, 1] # взять априорную вероятность для класса j
+      tig <- calc_prob_rasp(x_i, mu = mu[mu_for_j, 1:yc-1], E = E) #посчитать плотность
+      
+      tmp_ans <-  log(lyambda_j * aprior_j) + tig #вероятный ответ
+      
+      #проверка лучше ли вероятный ответ чем предыдущий лучший
+      if(tmp_ans > maxv) {
+        maxv <- tmp_ans
+        best_class <- j
+      }
+    }
+    
+    best_ans_for_xi <- c(best_class, as.numeric(maxv)) 
+    ans <- rbind(ans, best_ans_for_xi)
+  }
+  
+  name_class_col <- names(y)[yc]
+  names(ans) <- c(name_class_col, "tig")
+  return(ans)  
+}
+
+```
 [:arrow_up:Оглавление](#Оглавление)
