@@ -517,7 +517,7 @@ draw_norm_lines <- function(mu, E) {
 ![ХДЕ?????](NormNaiveBiasClass/formula.png?raw=true "Optional Title")
 
 Пример:
-![ХДЕ?????](NormNaiveBiasClass/ggplot_3_1_!.png?raw=true "Optional Title
+![ХДЕ?????](NormNaiveBiasClass/ggplot_3_1_1.png?raw=true "Optional Title")
 ![ХДЕ?????](NormNaiveBiasClass/ggplot_1_2_3.png?raw=true "Optional Title")
 ![ХДЕ?????](NormNaiveBiasClass/ggplot_1_10_20.png?raw=true "Optional Title")
 
