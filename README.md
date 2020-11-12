@@ -607,12 +607,46 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
 ![ХДЕ?????](PlugIn/ae37300c-4455-4b98-85c2-245c6de28c35.png?raw=true "Optional Title")
 ![ХДЕ?????](PlugIn/8e06689c-1842-4357-8003-abab9fa2caa7.png?raw=true "Optional Title")
 
-![ХДЕ?????](PlugIn/pretty.png?raw=true "Optional Title")
-![ХДЕ?????](PlugIn/pretty3.png?raw=true "Optional Title")
-![ХДЕ?????](PlugIn/pretty4.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/div_line_eli[s.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/div_line_gip.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/div_line_line.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/div_line_parab.png?raw=true "Optional Title")
 
 Код очень похож на наивный нормальный байесовский классификатор собственно потому, как нбк является подвидом PlugIn.
 ```R
+#посчитать плотность в точке
+#возвращает double
+calc_prob_rasp <- function(x, mu, E) {
+  #x - точка как вектор
+  #mu - мат ожидание как вектор
+  #E - ковариационная матрица
+  #(код функции сокращён)
+}
+
+
+#возвращает датафрейм с мат. ожиданиями
+#для всех признаков по всем классам
+calc_mu <- function (features) {
+  #features - датафрейм: вектора признаков - фактор классов
+  #(код функции сокращён)
+}
+
+#возвращает ковариационную матрицу по признакам
+#и мат ожиданию класса
+calc_cov_matr <- function(features, mu) {
+  #features - датафрейм признаков где последний столбец класс
+  #mu - мат ожидание, однострочная матрица
+  #(код функции сокращён)
+}
+
+
+#Считает априорные вероятности классов
+calc_aprior_prob <- function(features) {
+  #features - data.frame с выборкой по которой классифицирутся
+  #(код функции сокращён)
+}
+
+
 #основная функция PlugIn алгоритма
 #возвращает датафрейм ответов: класс ~ его плотность для объекта
 PlugIn <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
