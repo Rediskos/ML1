@@ -45,7 +45,7 @@ calc_mu <- function (features) {
       mus_for_one <- cbind(mus_for_one, sum(tmp_slice[, j]) / m)
     }
     
-    ans <- rbind(ans, c(mus_for_one, i))
+    ans <- rbind.data.frame(ans, cbind.data.frame(mus_for_one, i))
   }
   names(ans) <- names(features)
   
@@ -70,7 +70,10 @@ calc_cov_matr <- function(features, mu) {
     cov_mt_xi <- t(x_i - mu) %*% (x_i - mu)
     ans <- ans + cov_mt_xi
   }
-  ans <- ans / (m - 1)
+  
+  if(m > 1) {
+    ans <- ans / (m - 1)
+  }
   
   return(ans)
 }
@@ -169,6 +172,294 @@ PlugIn <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
   return(ans)  
 }
 
+#решает квадратное уравнение параболы
+solv_quad <- function(a, b, c) {
+  disc <- b ^ 2 - 4 * a * c
+  
+  #если корень комплексный, то пропускаем точку
+  if(disc < 0) {
+    return(NA)
+  }
+  
+  x1 <- (-b - sqrt(disc)) / (2 * a)
+  x2 <- (-b + sqrt(disc)) / (2 * a)
+  
+  ans <- x1
+  
+  #если решения свопали, то надо оставить только одну точку
+  if(x1 != x2) {
+    ans <- rbind(ans, x2)
+  }
+  
+  return(ans)
+}
+
+#решает просто уравнение от x^2
+solv_just_square <- function(a, c) {
+  for_sqrt <- (-c) / a
+  
+  if(for_sqrt < 0) {
+    return(NA)
+  }
+  
+  t <- sqrt(for_sqrt)
+  x1 <- t
+  x2 <- -t
+  
+  ans <- x1
+  if(x1 != x2) {
+    ans <- rbind(ans, x2)
+  }
+  
+  return(ans)
+}
+
+#решить линейное уравнение
+solv_linear <- function(b,c) {
+  ans <- -c/b
+  return(ans)
+}
+
+
+make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
+  #x - датафрейм точек уже классифицированых
+  #lyambdas - вектор важностей классов
+  
+  xc <- dim(x)[2] #колличество столбцов выборкиS
+  xl <- dim(x)[1]
+  
+  mu <- calc_mu(x)
+  # z <- mu[, c(1:xc-1)]
+  # tmp <- sapply(z, as.numeric)
+  # z <- cbind.data.frame(tmp, mu[, xc])
+  # mu[,] <- z[, c(1:xc-1)]
+  # mu[, c(1:xc-1)] <- sapply(mu[,c(1:xc-1)], as.numeric)
+  aprior <- aprior_prob(x)
+  solvs_E <- data.frame()
+  dets_E <- data.frame()
+  
+  
+  point <- data.frame()
+  
+  for(j in levels(x[, xc])) {
+    same_class <- which(x[, xc] == j) #найти индексы объектов одинакового класса
+    xj <- x[same_class, ] #взять объекты одинакового класса из выборки
+    
+    mu_for_j <- which(mu[, xc] == j)#индекс мат ожидания класса j
+    E <- calc_cov_matr(xj, mu[mu_for_j, ]) #посчитать ковариационную матрицу
+    
+    ttt <- as.numeric(as.vector(solve(E))) #векторизовать ковариационную матрицу0
+    solvs_E <- rbind(solvs_E, ttt) #добавить ВКМ ко ДФ из всех ВКМ
+    dets_E <- rbind.data.frame(dets_E, det(E)) #Запомнить определитель ВКМ
+  }
+  
+  
+  #получить точки соответствующей разделяющей прямой
+  #для двух классов
+  for (i in seq(from = tfrom, to = tto, by = step)) {
+    #коэффициент при x^2
+    A <- solvs_E[1, 1] - solvs_E[2, 1]
+    
+    #коэффициенты при x^1
+      #коэфициент при y
+    B1 <- solvs_E[1,3] - solvs_E[2,3] + solvs_E[1,2] - solvs_E[2,2]
+      #свободные коефициенты
+    B2 <- 2*mu[2,1]*solvs_E[2,1] -
+      2*mu[1,1]*solvs_E[1,1] +
+      solvs_E[2,3] * mu[2,2] -
+      solvs_E[1,3] * mu[1,2] +
+      solvs_E[2,2] * mu[2,2] -
+      solvs_E[1,2] * mu[1,2]
+      #окончательный коефициент при x^1
+    B <- B1 * i + B2
+    
+    #считаем константную часть
+      #коэфициент при y^2
+    D1 <- solvs_E[1,4] - solvs_E[2,4]
+    
+    #коефициент при y^1
+    D2 <- solvs_E[2,3] * mu[2,1] - solvs_E[1,3] * mu[1,1] +
+      solvs_E[2,2]*mu[2,1] - solvs_E[1,2]*mu[1,1] +
+      solvs_E[2,4] * mu[2,2] * 2 - solvs_E[1,4]*mu[1,2]*2
+    #коэфициенты при квадратах мат ожиданий
+    D3 <- solvs_E[1,1]*(mu[1,1]^2) - solvs_E[2,1]*(mu[2,1] ^ 2) +
+      solvs_E[1,4]*(mu[1,2]^2) - solvs_E[2,4]*(mu[2,2]^2)
+    
+    #коефициенты при переменожениях мат ожиданий
+    D4 <- (solvs_E[1,3] + solvs_E[1,2])*mu[1,2]*mu[1,1] -
+      (solvs_E[2,3] + solvs_E[2,2])*mu[2,2]*mu[2,1]
+    
+    #числитель логарифмической части
+    D5 <- lyambdas[1] * aprior[1,1] * sqrt((2*pi)^2 * dets_E[2,1])
+    
+    #знаменатель логарифмической части
+    D6 <- lyambdas[2] * aprior[2,1] * sqrt((2 * pi)^2 * dets_E[1,1])
+    
+    #Константная часть окончательно
+    D <- D1 * i^2 + D2 * i + D3 + D4 - 2 * log(D5 / D6)
+    
+    #вектор ЫКСОВ, тк ответов может быть больше одного
+    tmp <- vector()
+    
+    # if(A < 0){
+    #   A <- -A
+    #   B <- -B
+    #   C <- -D
+    # }
+    
+    #если коефициент при х^2 и x^1 не нулевой
+    #то это квадратное уравнение
+    if (A != 0 && B != 0) {
+      tmp <- solv_quad(A, B, D)
+      # tmp <- NA
+    } else
+      #если коефициет при x^2 != 0 а при x^1 == 0
+      #то это тоже квадратное уравнение, но решается иначе.
+      if (A != 0 && B == 0) {
+        tmp <- solv_just_square(A, D)
+        # tmp <- NA
+      } else
+        #если коефициет при x^2 == 0 а при x^1 != 0
+        #то это линейное уравнение.
+        if (A == 0 && B != 0) {
+          tmp <- solv_linear(B, C)
+        }
+    
+    #если точка была комплексной, то пропустить её
+    if(is.na(tmp) == FALSE) {
+      point <- rbind.data.frame(point, cbind.data.frame(tmp, i))
+    }
+  }
+  return(point)
+}
+
+make_div_line <- function(x, lyambdas) {
+  #x - датафрейм точек уже классифицированых
+  #lyambdas - вектор важностей классов
+  
+  xc <- dim(x)[2] #колличество столбцов выборкиS
+  xl <- dim(x)[1]
+  
+  mu <- calc_mu(x)
+  # z <- mu[, c(1:xc-1)]
+  # tmp <- sapply(z, as.numeric)
+  # z <- cbind.data.frame(tmp, mu[, xc])
+  # mu[,] <- z[, c(1:xc-1)]
+  # mu[, c(1:xc-1)] <- sapply(mu[,c(1:xc-1)], as.numeric)
+  aprior <- aprior_prob(x)
+  solvs_E <- data.frame()
+  dets_E <- data.frame()
+  
+  
+  point <- data.frame()
+  
+  for(j in levels(x[, xc])) {
+    same_class <- which(x[, xc] == j) #найти индексы объектов одинакового класса
+    xj <- x[same_class, ] #взять объекты одинакового класса из выборки
+    
+    mu_for_j <- which(mu[, xc] == j)#индекс мат ожидания класса j
+    E <- calc_cov_matr(xj, mu[mu_for_j, ]) #посчитать ковариационную матрицу
+    ttt <- as.numeric(as.vector(solve(E))) #векторизовать ковариационную матрицу0
+    solvs_E <- rbind(solvs_E, ttt) #добавить ВКМ ко ДФ из всех ВКМ
+    dets_E <- rbind.data.frame(dets_E, det(E)) #Запомнить определитель ВКМ
+  }
+  
+  
+  #получить точки соответствующей разделяющей прямой
+  #для двух классов
+  for (i in seq(from = 0, to = 3, by = 0.01)) {
+    #коэффициент при x^2
+    A <- solvs_E[1, 1] - solvs_E[2, 1]
+    
+    #коэффициенты при x^1
+      #коэфициент при y
+    B1 <- solvs_E[1, 3] + solvs_E[1,2] - solvs_E[2,3] - solvs_E[2,2]
+      #свободные коефициенты
+    B2 <- -2 * solvs_E[1,1] * mu[1,1] - solvs_E[1,3] * mu[1,1] - solvs_E[1,4] *
+      mu[1,2] + 2 * solvs_E[2,1] * mu[2,1] + solvs_E[2,3] * mu[2,1] + solvs_E[2,4] * mu[1,2]
+      #окончательный коефициент при x^1
+    B <- B1 * i + B2
+    
+    #считаем константную часть
+      #коэфициент при y^2
+    D1 <- solvs_E[1,4] - solvs_E[2,4]
+    
+      #коефициент при y^1
+    D2 <- -1 * solvs_E[1,3] * mu[1,2] - solvs_E[1,2] * mu[1,1] - 2 * solvs_E[1,4] *
+      mu[1,2] + solvs_E[2,3] * mu[2,2] + solvs_E[2,2] * mu[2,1] + 2 * solvs_E[2,4] * mu[2,2]
+    
+      #коэфициенты при квадратах мат ожиданий
+    D3 <- solvs_E[1,1] * mu[1,1]^2 - solvs_E[2,1] * mu[2,1]^2 + solvs_E[1,4] * mu[1,2] ^ 2 -
+      solvs_E[2,4] * mu[2,2] ^ 2
+    
+      #коефициенты при переменожениях мат ожиданий
+    D4 <- (solvs_E[1,3] + solvs_E[1,2]) * mu[1,1] * mu[1,2] -
+      (solvs_E[2,3] + solvs_E[2,2]) * mu[2,1] * mu[2,2]
+    
+      #числитель логарифмической части
+    D5 <- lyambdas[1] * aprior[1,1] * sqrt((2*pi)^2 * dets_E[2,1])
+    
+      #знаменатель логарифмической части
+    D6 <- lyambdas[2] * aprior[2,1] * sqrt((2 * pi)^2 * dets_E[1,1])
+    
+      #Константная часть окончательно
+    D <- D1 * i^2 + D2 * i + D3 + D4 - 2 * log(D5 / D6)
+    
+    #вектор ЫКСОВ, тк ответов может быть больше одного
+    tmp <- vector()
+    
+    if(A < 0){
+      A <- -A
+      B <- -B
+      C <- -D
+    }
+    
+    #если коефициент при х^2 и x^1 не нулевой
+    #то это квадратное уравнение
+    if (abs(A) > 1e-6 && abs(B) > 1e-6) {
+      tmp <- solv_quad(A, B, D)
+    } else
+      #если коефициет при x^2 != 0 а при x^1 == 0
+      #то это тоже квадратное уравнение, но решается иначе.
+      if (abs(A) > 1e-6 && abs(B) < 1e-6) {
+      tmp <- solv_just_square(A, D)
+    } else
+      #если коефициет при x^2 == 0 а при x^1 != 0
+      #то это линейное уравнение.
+      if (abs(A) < 1e-6 && abs(B) > 1e-6) {
+      tmp <- solv_linear(B, C)
+    }
+    
+    #если точка была комплексной, то пропустить её
+    if(is.na(tmp) == FALSE) {
+      point <- rbind.data.frame(point, cbind.data.frame(tmp, i))
+    }
+  }
+  return(point)
+}
+# tx <- iris
+# ty <- c(1:3)
+# aa$class <- as.factor(aa$class)
+# tmap$class <- as.factor(tmap$class)
+# tmap_div_line <- make_div_line(tmap[, 1:3], c(1:2))
+
+tmap_div_line <- make_div_line2(lft[, 1:3], c(1,1))
+
+# 
+# for_cc <- which(aa$class != "versicolor")
+# 
+# cc <- aa[for_cc, 1:5]
+# cc
+# names(cc)[5] <- "Species"
+# 
+# cc$Species <- as.factor(as.vector(cc$Species))
+# str(cc)
+# div_line <- make_div_line(cc[, 3:5], ty)
+# div_line
+# colors <- c("setosa" ="red", "virginica" = "green","versicolor" = "blue")
+# 
+# plot(aa$Petal.Length, aa$Petal.Width, col = colors[aa$class])
+# points(div_line$tmp, div_line$i)
 
 make_map <- function(y, params, classifier = PlugIn) {
   # 
@@ -198,15 +489,15 @@ make_map <- function(y, params, classifier = PlugIn) {
   #   j <- 0
   # }
   
-  i = 0
-  j = 0
+  i = 1
+  j = 1
   
   
   tmps <- data.frame()
   rem <- names(y)
   r2 <- NA
-  while (i <= 2) {
-    while(j < 2) {
+  while (i <= 7) {
+    while(j < 5) {
       p <- y[1, 1:(dim(y)[2] - 1)]
       p[, params] <- c(i, j)
       
@@ -232,7 +523,7 @@ make_map <- function(y, params, classifier = PlugIn) {
   return(tmps)
 }
 
-draw_map <- function(xx, yy) {
+draw_map <- function(xx, yy, div_line) {
   
   xc <- dim(xx)[2]
   clas <- levels(xx[, xc])
@@ -249,35 +540,37 @@ draw_map <- function(xx, yy) {
   #   scale_alpha_continuous(name = "Плотность") + 
   #   labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера")
 
-  ggplot(data = xx, aes(x = Petal.Length, y = Petal.Width)) +
-    geom_point(data = yy, shape = 22, aes(fill = Species), size = 2, stroke = 0) +
+  ggplot(data = xx, aes(x = first, y = second)) +
+    geom_point(data = yy, shape = 22, aes(fill = class), size = 2, stroke = 0) +
     scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
     
-    geom_point(shape = 22, aes(alpha = tig, fill = Species), 
+    geom_point(shape = 22, aes(alpha = tig, fill = class), 
                size = 4, stroke = 0)+ 
     scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
     scale_alpha_continuous(name = "Плотность нормированная сигмоидой") + 
-    # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")+
+    # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")++
+    geom_point(data = div_line, aes(x = tmp, y = i)) +
     
     labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера") 
   }
 
 
-x <- iris[1,]
-
-ans <- PlugIn(x[3:4], iris[3:5])
-
-ans
-
-
-aa <- make_map()
-str(aa)
-iris
-aa[which(aa$Species == "virginica"), ]
-
-contourplot(tig ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
-
-
-bb <- aa
-bb$tig <- sigmoid(as.numeric(aa$tig))
+# x <- iris[1,]
+# 
+# ans <- PlugIn(x[3:4], iris[3:5])
+# 
+# ans
+# 
+# 
+# aa <- make_map()
+# str(aa)
+# iris
+# aa[which(aa$Species == "virginica"), ]
+# 
+# contourplot(tig ~ Petal.Length * Petal.Width, data = aa, region = TRUE)
+# 
+# 
+# bb <- aa
+# bb$tig <- sigmoid(as.numeric(aa$tig))
+names(bb)
 draw_map(bb, iris)

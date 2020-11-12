@@ -280,7 +280,7 @@ draw_map <- function(xx, yy) {
     # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")+
     
     labs(title = "Карта классификации наивного нормального
-         байесовского классификатора: ирисы Фишера, lambda = (1,10,20)") 
+         байесовского классификатора: ирисы Фишера, lambda = (1,2,3)") 
 }
 
 
@@ -292,7 +292,7 @@ colors2 <- c("1" = "red", "2" = "green3",
             "3" = "blue", "na" = "yellow") 
 make_map(colors)
 
-aa <- make_map(colors, lyambdas = c(1,10,20))
+aa <- make_map(colors, lyambdas = c(1,2,3))
 
 aa
 
