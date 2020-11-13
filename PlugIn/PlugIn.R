@@ -78,7 +78,10 @@ calc_cov_matr <- function(features, mu) {
   return(ans)
 }
 
+
+#Считает априорные вероятности классов
 calc_aprior_prob <- function(features) {
+  #features - data.frame с выборкой по которой классифицирутся
   m <- dim(features)[1]
   l <- dim(features)[2]
   
@@ -241,12 +244,14 @@ make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
   
   point <- data.frame()
   
+  l <- dim(x)[1]
+  
   for(j in levels(x[, xc])) {
     same_class <- which(x[, xc] == j) #найти индексы объектов одинакового класса
     xj <- x[same_class, ] #взять объекты одинакового класса из выборки
     
     mu_for_j <- which(mu[, xc] == j)#индекс мат ожидания класса j
-    E <- calc_cov_matr(xj, mu[mu_for_j, ]) #посчитать ковариационную матрицу
+    E <- calc_cov_matr(xj, mu[mu_for_j, ], l) #посчитать ковариационную матрицу
     
     ttt <- as.numeric(as.vector(solve(E))) #векторизовать ковариационную матрицу0
     solvs_E <- rbind(solvs_E, ttt) #добавить ВКМ ко ДФ из всех ВКМ
@@ -324,111 +329,6 @@ make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
         if (A == 0 && B != 0) {
           tmp <- solv_linear(B, C)
         }
-    
-    #если точка была комплексной, то пропустить её
-    if(is.na(tmp) == FALSE) {
-      point <- rbind.data.frame(point, cbind.data.frame(tmp, i))
-    }
-  }
-  return(point)
-}
-
-make_div_line <- function(x, lyambdas) {
-  #x - датафрейм точек уже классифицированых
-  #lyambdas - вектор важностей классов
-  
-  xc <- dim(x)[2] #колличество столбцов выборкиS
-  xl <- dim(x)[1]
-  
-  mu <- calc_mu(x)
-  # z <- mu[, c(1:xc-1)]
-  # tmp <- sapply(z, as.numeric)
-  # z <- cbind.data.frame(tmp, mu[, xc])
-  # mu[,] <- z[, c(1:xc-1)]
-  # mu[, c(1:xc-1)] <- sapply(mu[,c(1:xc-1)], as.numeric)
-  aprior <- aprior_prob(x)
-  solvs_E <- data.frame()
-  dets_E <- data.frame()
-  
-  
-  point <- data.frame()
-  
-  for(j in levels(x[, xc])) {
-    same_class <- which(x[, xc] == j) #найти индексы объектов одинакового класса
-    xj <- x[same_class, ] #взять объекты одинакового класса из выборки
-    
-    mu_for_j <- which(mu[, xc] == j)#индекс мат ожидания класса j
-    E <- calc_cov_matr(xj, mu[mu_for_j, ]) #посчитать ковариационную матрицу
-    ttt <- as.numeric(as.vector(solve(E))) #векторизовать ковариационную матрицу0
-    solvs_E <- rbind(solvs_E, ttt) #добавить ВКМ ко ДФ из всех ВКМ
-    dets_E <- rbind.data.frame(dets_E, det(E)) #Запомнить определитель ВКМ
-  }
-  
-  
-  #получить точки соответствующей разделяющей прямой
-  #для двух классов
-  for (i in seq(from = 0, to = 3, by = 0.01)) {
-    #коэффициент при x^2
-    A <- solvs_E[1, 1] - solvs_E[2, 1]
-    
-    #коэффициенты при x^1
-      #коэфициент при y
-    B1 <- solvs_E[1, 3] + solvs_E[1,2] - solvs_E[2,3] - solvs_E[2,2]
-      #свободные коефициенты
-    B2 <- -2 * solvs_E[1,1] * mu[1,1] - solvs_E[1,3] * mu[1,1] - solvs_E[1,4] *
-      mu[1,2] + 2 * solvs_E[2,1] * mu[2,1] + solvs_E[2,3] * mu[2,1] + solvs_E[2,4] * mu[1,2]
-      #окончательный коефициент при x^1
-    B <- B1 * i + B2
-    
-    #считаем константную часть
-      #коэфициент при y^2
-    D1 <- solvs_E[1,4] - solvs_E[2,4]
-    
-      #коефициент при y^1
-    D2 <- -1 * solvs_E[1,3] * mu[1,2] - solvs_E[1,2] * mu[1,1] - 2 * solvs_E[1,4] *
-      mu[1,2] + solvs_E[2,3] * mu[2,2] + solvs_E[2,2] * mu[2,1] + 2 * solvs_E[2,4] * mu[2,2]
-    
-      #коэфициенты при квадратах мат ожиданий
-    D3 <- solvs_E[1,1] * mu[1,1]^2 - solvs_E[2,1] * mu[2,1]^2 + solvs_E[1,4] * mu[1,2] ^ 2 -
-      solvs_E[2,4] * mu[2,2] ^ 2
-    
-      #коефициенты при переменожениях мат ожиданий
-    D4 <- (solvs_E[1,3] + solvs_E[1,2]) * mu[1,1] * mu[1,2] -
-      (solvs_E[2,3] + solvs_E[2,2]) * mu[2,1] * mu[2,2]
-    
-      #числитель логарифмической части
-    D5 <- lyambdas[1] * aprior[1,1] * sqrt((2*pi)^2 * dets_E[2,1])
-    
-      #знаменатель логарифмической части
-    D6 <- lyambdas[2] * aprior[2,1] * sqrt((2 * pi)^2 * dets_E[1,1])
-    
-      #Константная часть окончательно
-    D <- D1 * i^2 + D2 * i + D3 + D4 - 2 * log(D5 / D6)
-    
-    #вектор ЫКСОВ, тк ответов может быть больше одного
-    tmp <- vector()
-    
-    if(A < 0){
-      A <- -A
-      B <- -B
-      C <- -D
-    }
-    
-    #если коефициент при х^2 и x^1 не нулевой
-    #то это квадратное уравнение
-    if (abs(A) > 1e-6 && abs(B) > 1e-6) {
-      tmp <- solv_quad(A, B, D)
-    } else
-      #если коефициет при x^2 != 0 а при x^1 == 0
-      #то это тоже квадратное уравнение, но решается иначе.
-      if (abs(A) > 1e-6 && abs(B) < 1e-6) {
-      tmp <- solv_just_square(A, D)
-    } else
-      #если коефициет при x^2 == 0 а при x^1 != 0
-      #то это линейное уравнение.
-      if (abs(A) < 1e-6 && abs(B) > 1e-6) {
-      tmp <- solv_linear(B, C)
-    }
     
     #если точка была комплексной, то пропустить её
     if(is.na(tmp) == FALSE) {

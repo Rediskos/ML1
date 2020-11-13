@@ -42,7 +42,7 @@ calc_mu <- function (features) {
       mus_for_one <- cbind(mus_for_one, sum(tmp_slice[, j]) / m)
     }
     
-    ans <- rbind(ans, c(mus_for_one, i))
+    ans <- rbind.data.frame(ans, cbind.data.frame(mus_for_one, i))
   }
   names(ans) <- names(features)
   
@@ -186,6 +186,83 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
   return(ans)  
 }
 
+make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
+  #x - датафрейм точек уже классифицированых
+  #lyambdas - вектор важностей классов
+  
+  xc <- dim(x)[2] #колличество столбцов выборкиS
+  xl <- dim(x)[1]
+  
+  mu <- calc_mu(x)
+  # z <- mu[, c(1:xc-1)]
+  # tmp <- sapply(z, as.numeric)
+  # z <- cbind.data.frame(tmp, mu[, xc])
+  # mu[,] <- z[, c(1:xc-1)]
+  # mu[, c(1:xc-1)] <- sapply(mu[,c(1:xc-1)], as.numeric)
+  aprior <- aprior_prob(x)
+  solvs_E <- data.frame()
+  dets_E <- data.frame()
+  
+  
+  point <- data.frame()
+  
+  l <- dim(x)[1]
+  
+  E <- calc_cov_matr(x, mu, l) #посчитать ковариационную матрицу
+  solvs_E <- as.numeric(as.vector(solve(E))) #векторизовать ковариационную матрицу0
+  
+  
+  #получить точки соответствующей разделяющей прямой
+  #для двух классов
+  for (i in seq(from = tfrom, to = tto, by = step)) {
+    #коэфициент при х
+    A <- solvs_E[1] * mu[1,1] + solvs_E[2]*mu[1,1] - solvs_E[1]*mu[2,1] -
+      solvs_E[2]*mu[2,1]
+    
+    #коеф при y
+    B <- solvs_E[3]*mu[1,2] + solvs_E[4]*mu[1,2] - solvs_E[3]*mu[2,2] -
+      solvs_E[4]*mu[2,2]
+    
+    B <- B * i
+    
+    
+    #коеф при -1/2
+    C <-solvs_E[1]*(mu[1,1]^2) + solvs_E[4]*(mu[1,2]^2) +
+      (solvs_E[3] + solvs_E[2])*mu[1,2]*mu[1,1]
+    
+    C <- -C / 2
+    
+    #коеф при 1/2
+    D <-solvs_E[1]*(mu[2,1]^2) + solvs_E[4]*(mu[2,2]^2) +
+    (solvs_E[3] + solvs_E[2])*mu[2,2]*mu[2,1]
+    
+    D <- D / 2
+    
+    #с логарифмами
+    E <- -log(lyambdas[2]*aprior[2,1]) + log(lyambdas[1]*aprior[1,1])
+    
+    Const_part <- B + C + D + E
+    
+    if(abs(A) > 1e-6) {
+      p <- -Const_part / A
+    } else {
+      p <- NA
+    }
+  
+    #если точка была комплексной, то пропустить её
+    if(is.na(p) == FALSE) {
+      point <- rbind.data.frame(point, cbind.data.frame(p, i))
+    }
+  }
+  return(point)
+}
+# tx <- iris
+# ty <- c(1:3)
+# aa$class <- as.factor(aa$class)
+# tmap$class <- as.factor(tmap$class)
+# tmap_div_line <- make_div_line(tmap[, 1:3], c(1:2))
+
+tmap_div_line <- make_div_line2(lft[, 1:3], c(1,1))
 
 make_map <- function(y, params, classifier = LDF) {
   
