@@ -736,11 +736,6 @@ PlugIn <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
 
 LDF строит разделяющую пряму между классами.
 
-![ХДЕ?????](LDF/plot_zoom_not_norm.png?raw=true "Optional Title")
-
-Однако стоит учитывать, если формы классов сильно не похожи, эвристика может дать плохой результат.
-![ХДЕ?????](LDF/cant_be_pretty.png?raw=true "Optional Title")
-
 ![ХДЕ?????](LDF/div_line_1.png?raw=true "Optional Title")
 ![ХДЕ?????](LDF/div_line_2.png?raw=true "Optional Title")
 ![ХДЕ?????](LDF/div_line_3.png?raw=true "Optional Title")
