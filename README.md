@@ -518,6 +518,9 @@ draw_norm_lines <- function(mu, E) {
 
 Пример:
 
+![ХДЕ?????](NormNaiveBiasClass/ggplot_3_1_1.png?raw=true "Optional Title")
+![ХДЕ?????](NormNaiveBiasClass/ggplot_1_2_3.png?raw=true "Optional Title")
+![ХДЕ?????](NormNaiveBiasClass/ggplot_1_10_20.png?raw=true "Optional Title")
 
 ```R
 #основной алгоритм наивного байеса.
