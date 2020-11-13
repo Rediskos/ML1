@@ -78,7 +78,7 @@ calc_cov_matr <- function(y, tmu, tl) {
       ans <- ans + cov_mt_xi
     }
     
-    # ans <- ans / (tl - tm)
+    ans <- ans / (tl - tm)
   }
   ans <- ans / tl
   
