@@ -741,8 +741,12 @@ LDF строит разделяющую пряму между классами.
 Однако стоит учитывать, если формы классов сильно не похожи, эвристика может дать плохой результат.
 ![ХДЕ?????](LDF/cant_be_pretty.png?raw=true "Optional Title")
 
+![ХДЕ?????](LDF/div_line_1.png?raw=true "Optional Title")
+![ХДЕ?????](LDF/div_line_2.png?raw=true "Optional Title")
+![ХДЕ?????](LDF/div_line_3.png?raw=true "Optional Title")
+
 ```R
-#основная функция PlugIn алгоритма
+#основная функция LDF алгоритма
 #возвращает датафрейм ответов: класс ~ его плотность для объекта
 LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
   #x - классифицируемые объекты
