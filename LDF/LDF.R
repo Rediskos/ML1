@@ -75,12 +75,11 @@ calc_cov_matr <- function(y, tmu, tl) {
     for (i in 1:tm) {
       x_i <- as.matrix(yj[i, 1:l-1], nrow = 1)
       cov_mt_xi <- t(x_i - mu) %*% (x_i - mu)
-      ans <- ans + cov_mt_xi
+      ans <- ans + cov_mt_xi / (m + 2)
     }
     
-    ans <- ans / (tl - tm)
   }
-  ans <- ans / tl
+  # ans <- ans / tl
   
   
   # ans <- ans / tl #поправка на смещённость
@@ -186,6 +185,46 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
   return(ans)  
 }
 
+make_div_line3 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
+  #x - датафрейм точек уже классифицированых
+  #lyambdas - вектор важностей классов
+  
+  xc <- dim(x)[2] #колличество столбцов выборкиS
+  xl <- dim(x)[1]
+  
+  mu <- calc_mu(x)
+  mu1 <- t(as.matrix(mu[1,1:2]))
+  
+  mu2 <- t(as.matrix(mu[2,1:2]))
+  # z <- mu[, c(1:xc-1)]
+  # tmp <- sapply(z, as.numeric)
+  # z <- cbind.data.frame(tmp, mu[, xc])
+  # mu[,] <- z[, c(1:xc-1)]
+  # mu[, c(1:xc-1)] <- sapply(mu[,c(1:xc-1)], as.numeric)
+  aprior <- aprior_prob(x)
+  solvs_E <- data.frame()
+  dets_E <- data.frame()
+  
+  
+  point <- data.frame()
+  
+  l <- dim(x)[1]
+  
+  E <- calc_cov_matr(x, mu, l) #посчитать ковариационную матрицу
+  
+  s_E <- solve(E)
+  
+  A1 <- s_E %*% mu1
+  A2 <- s_E %*% mu2
+  A <- A1 - A2
+  B1 <- log(lyambdas[1] * aprior[1,1]) - log(lyambdas[2] * aprior[2,1])
+  B2 <- t(mu1) %*% s_E %*% mu1
+  B3 <- t(mu2) %*% s_E %*% mu2
+  B <-B1 + -B2 / 2 + B3 / 2
+  
+  return(c(A, B))
+}
+
 make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
   #x - датафрейм точек уже классифицированых
   #lyambdas - вектор важностей классов
@@ -262,7 +301,7 @@ make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
 # tmap$class <- as.factor(tmap$class)
 # tmap_div_line <- make_div_line(tmap[, 1:3], c(1:2))
 
-tmap_div_line <- make_div_line2(lft[, 1:3], c(1,1))
+# tmap_div_line <- make_div_line2(lft[, 1:3], c(1,1))
 
 make_map <- function(y, params, classifier = LDF) {
   
@@ -273,8 +312,8 @@ make_map <- function(y, params, classifier = LDF) {
   tmps <- data.frame()
   rem <- names(y)
   r2 <- NA
-  while (i <= 1) {
-    while(j < 1) {
+  while (i <= 7) {
+    while(j < 2.6) {
       p <- y[1, 1:(dim(y)[2] - 1)]
       p[, params] <- c(i, j)
       
@@ -286,11 +325,11 @@ make_map <- function(y, params, classifier = LDF) {
       # points(p[,3], p[,4], pch = 22,
       #        # bg = colors[p[, 5]],
       #        col = colors[p$class], alpha = p[,6])
-      j <- j + 0.05
+      j <- j + 0.1
       
       tmps <- rbind(tmps, p)
     }
-    i <- i + 0.05
+    i <- i + 0.1
     j <- 0
   }
   
@@ -298,10 +337,10 @@ make_map <- function(y, params, classifier = LDF) {
   names(tmps) <- c(rem, r2)
   return(tmps)
 }
-tmap <- make_map(lft, 1:2)
-tmap[1,]
+# tmap <- make_map(lft, 1:2)
+# tmap[1,]
 
-draw_map <- function(xx, yy) {
+draw_map <- function(xx, yy, zz, mm) {
 
   xc <- dim(xx)[2]
   class <- levels(xx[, xc])
@@ -329,16 +368,31 @@ draw_map <- function(xx, yy) {
   #   
   #   labs(title = "Карта классификации LDF алгоритма: ирисы Фишера") 
   
-  ggplot(data = xx, aes(x = first, y = second)) +
+  my.scales <- list(
+    scale_x_continuous(name="Petal.Length", limits=c(0,7)),
+    scale_y_continuous(name="Petal.Width", limits=c(0,2.6)),
+    scale_fill_manual(values = c("red", "green", "blue"), name = "Класс"),
+    scale_alpha_continuous(name = "Плотность"),
+    scale_linetype(name="Разделяющая прямая")
+  )
+  
+  ggplot(data = xx, aes(x = Petal.Length, y = Petal.Width)) +
     
-    geom_point(shape = 22, aes(alpha = tig, fill = class), 
+    geom_point(shape = 22, aes(alpha = tig, fill = Species), 
                size = 5, stroke = 0)+ 
-    scale_fill_manual(values = c("red", "green"), name = "Класс")+
-    scale_alpha_continuous(name = "Плотность") +
+    geom_abline(data = zz, mapping = aes(slope = xx, intercept = yy), size = 2) +
+    geom_abline(data = mm, mapping = aes(slope = xx, intercept = yy), size = 2) +
     # scale_alpha_continuous(name = "Плотность нормированная сигмоидой") + 
-    geom_point(data = yy, shape = 22, aes(fill = class), size = 2, stroke = 2) +
-    scale_fill_manual(values = c("red", "green"), name = "Класс")+
+    geom_point(data = yy, shape = 22, aes(fill = Species), size = 2, stroke = 2) +
     
+    # scale_linetype(name="s") +
+    my.scales+
+    
+    # 
+    # xlim(c(0,7)) +
+    # ylim(c(0,2.6))+
+  
+
     
     # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")+
     
@@ -347,8 +401,8 @@ draw_map <- function(xx, yy) {
 }
 # 
 # tmap$tig <- sigmoid(as.numeric(tmap$tig))
-tmap$tig <- as.numeric(tmap$tig)
-draw_map(tmap, lft)
+# tmap$tig <- as.numeric(tmap$tig)
+# draw_map(tmap, lft)
 # 
 # tmap
 
@@ -375,11 +429,40 @@ sigmoid = function(x) {
 # dev.cur()
 # draw_map(aa, iris)
 # 
-# aa <- make_map(iris, 3:4)
-# aa
-# bb <- aa
-# bb$tig <- as.numeric(aa$tig)
+aa <- make_map(iris, 3:4)
+aa[1,]
+bb <- aa
+bb[1,]
+bb$tig <- as.numeric(aa$tig)
 # bb$tig <- sigmoid(bb$tig)
-# bb
-# draw_map(bb, iris)
+# names(bb)
+draw_map(bb, iris, zz, mm)
+# levels(iris$Species)
+not_verginia <- iris[iris$Species != "virginica",]
 
+not_verginia$Species <- as.character(not_verginia$Species)
+not_verginia$Species <- as.factor(not_verginia$Species)
+not_setosa <- iris[iris$Species != "setosa", ]
+not_setosa$Species <- as.character(not_setosa$Species)
+not_setosa$Species <- as.factor(not_setosa$Species)
+asd <- not_verginia[, 3:5]
+asd
+not_verginia_div_line <- make_div_line2(not_verginia[, 3:5], c(1,1), 0, 3, 0.01)
+names(not_setosa_div_line)
+not_setosa_div_line <- make_div_line2(not_setosa[, 3:5], c(1,1), 0, 3, 0.01)
+
+z <- make_div_line3(not_verginia[3:5], c(1,1))
+z
+
+zz <- data.frame(xx = z[1]/(-z[2]),yy = z[3]/(-z[2]))
+zz
+
+
+m <- make_div_line3(not_setosa[3:5], c(1,1))
+mm <- data.frame(xx = m[1]/(-m[2]), yy = m[3]/(-m[2]))
+
+ggplot() +
+  scale_x_continuous(name="x", limits=c(-5,5)) +
+  scale_y_continuous(name="y", limits=c(-5,5)) +
+  # scale_linetype(name="s") +
+  geom_abline(data = zz, mapping = aes(slope = xx, intercept = yy))
