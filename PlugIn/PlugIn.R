@@ -176,7 +176,7 @@ PlugIn <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
 }
 
 #решает квадратное уравнение параболы
-solv_quad <- function(a, b, c) {
+solv_quad <- function(a, b, c, ind) {
   disc <- b ^ 2 - 4 * a * c
   
   #если корень комплексный, то пропускаем точку
@@ -186,6 +186,9 @@ solv_quad <- function(a, b, c) {
   
   x1 <- (-b - sqrt(disc)) / (2 * a)
   x2 <- (-b + sqrt(disc)) / (2 * a)
+  
+  x1 <- c(x1, ind)
+  x2 <- c(x2, -ind)
   
   ans <- x1
   
@@ -198,7 +201,7 @@ solv_quad <- function(a, b, c) {
 }
 
 #решает просто уравнение от x^2
-solv_just_square <- function(a, c) {
+solv_just_square <- function(a, c, ind) {
   for_sqrt <- (-c) / a
   
   if(for_sqrt < 0) {
@@ -209,6 +212,9 @@ solv_just_square <- function(a, c) {
   x1 <- t
   x2 <- -t
   
+  x1 <- c(x1, ind)
+  x2 <- c(x2, -ind)
+  
   ans <- x1
   if(x1 != x2) {
     ans <- rbind(ans, x2)
@@ -218,8 +224,11 @@ solv_just_square <- function(a, c) {
 }
 
 #решить линейное уравнение
-solv_linear <- function(b,c) {
+solv_linear <- function(b,c, ind) {
   ans <- -c/b
+  
+  ans <- c(ans, ind)
+  
   return(ans)
 }
 
@@ -251,13 +260,15 @@ make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
     xj <- x[same_class, ] #взять объекты одинакового класса из выборки
     
     mu_for_j <- which(mu[, xc] == j)#индекс мат ожидания класса j
-    E <- calc_cov_matr(xj, mu[mu_for_j, ], l) #посчитать ковариационную матрицу
+    E <- calc_cov_matr(xj, mu[mu_for_j, ]) #посчитать ковариационную матрицу
     
     ttt <- as.numeric(as.vector(solve(E))) #векторизовать ковариационную матрицу0
     solvs_E <- rbind(solvs_E, ttt) #добавить ВКМ ко ДФ из всех ВКМ
     dets_E <- rbind.data.frame(dets_E, det(E)) #Запомнить определитель ВКМ
   }
   
+  
+  ind <- 0
   
   #получить точки соответствующей разделяющей прямой
   #для двух классов
@@ -315,25 +326,27 @@ make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
     #если коефициент при х^2 и x^1 не нулевой
     #то это квадратное уравнение
     if (A != 0 && B != 0) {
-      tmp <- solv_quad(A, B, D)
+      tmp <- solv_quad(A, B, D, ind)
       # tmp <- NA
     } else
       #если коефициет при x^2 != 0 а при x^1 == 0
       #то это тоже квадратное уравнение, но решается иначе.
       if (A != 0 && B == 0) {
-        tmp <- solv_just_square(A, D)
+        tmp <- solv_just_square(A, D, ind)
         # tmp <- NA
       } else
         #если коефициет при x^2 == 0 а при x^1 != 0
         #то это линейное уравнение.
         if (A == 0 && B != 0) {
-          tmp <- solv_linear(B, C)
+          tmp <- solv_linear(B, C, ind)
         }
     
     #если точка была комплексной, то пропустить её
     if(is.na(tmp) == FALSE) {
       point <- rbind.data.frame(point, cbind.data.frame(tmp, i))
     }
+    
+    ind <- ind + 1
   }
   return(point)
 }
@@ -344,6 +357,13 @@ make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
 # tmap_div_line <- make_div_line(tmap[, 1:3], c(1:2))
 
 tmap_div_line <- make_div_line2(lft[, 1:3], c(1,1))
+
+tmap_div_line[, 2:3] <- tmap_div_line[, 3:2]
+tmap_div_line[1,]
+
+order(tmap_div_line[,3])
+tord<- tmap_div_line[order(tmap_div_line[,3]), ]
+tord
 
 # 
 # for_cc <- which(aa$class != "versicolor")
@@ -389,15 +409,15 @@ make_map <- function(y, params, classifier = PlugIn) {
   #   j <- 0
   # }
   
-  i = 1
-  j = 1
+  i = 0
+  j = 0
   
   
   tmps <- data.frame()
   rem <- names(y)
   r2 <- NA
   while (i <= 7) {
-    while(j < 5) {
+    while(j < 2.6) {
       p <- y[1, 1:(dim(y)[2] - 1)]
       p[, params] <- c(i, j)
       
@@ -423,7 +443,7 @@ make_map <- function(y, params, classifier = PlugIn) {
   return(tmps)
 }
 
-draw_map <- function(xx, yy, div_line) {
+draw_map <- function(xx, yy, div_line1, div_line2) {
   
   xc <- dim(xx)[2]
   clas <- levels(xx[, xc])
@@ -440,20 +460,23 @@ draw_map <- function(xx, yy, div_line) {
   #   scale_alpha_continuous(name = "Плотность") + 
   #   labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера")
 
-  ggplot(data = xx, aes(x = first, y = second)) +
-    geom_point(data = yy, shape = 22, aes(fill = class), size = 2, stroke = 0) +
+  ggplot(data = xx, aes(x = Petal.Length, y = Petal.Width)) +
+    geom_point(data = yy, shape = 22, aes(fill = Species), size = 2, stroke = 0) +
     scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
     
-    geom_point(shape = 22, aes(alpha = tig, fill = class), 
+    geom_point(shape = 22, aes(alpha = tig, fill = Species), 
                size = 4, stroke = 0)+ 
     scale_fill_manual(values = c("red", "green", "blue"), name = "Класс")+
     scale_alpha_continuous(name = "Плотность нормированная сигмоидой") + 
     # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")++
-    geom_point(data = div_line, aes(x = tmp, y = i)) +
-    
+    geom_path(data = div_line1, aes(x = one, y = thri)) +
+    geom_path(data = div_line2, aes(x = one, y = thri)) +
+    xlim(0, 7) +
+    ylim(0, 2.6) +
     labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера") 
   }
 
+draw_map(bb, iris, z, zz)
 
 # x <- iris[1,]
 # 
@@ -472,5 +495,56 @@ draw_map <- function(xx, yy, div_line) {
 # 
 # bb <- aa
 # bb$tig <- sigmoid(as.numeric(aa$tig))
-names(bb)
-draw_map(bb, iris)
+# names(bb)
+# draw_map(bb, iris)
+
+
+aa <- make_map(iris, 3:4)
+aa[1,]
+bb <- aa
+bb[1,]
+bb$tig <- as.numeric(aa$tig)
+# bb$tig <- sigmoid(bb$tig)
+# names(bb)
+
+tmap_div_line <- make_div_line2(iri)
+
+draw_map(bb, iris, not_setosa_div_line, not_verginia_div_line)
+# levels(iris$Species)
+not_verginia <- iris[iris$Species != "virginica",]
+
+not_verginia$Species <- as.character(not_verginia$Species)
+not_verginia$Species <- as.factor(not_verginia$Species)
+not_setosa <- iris[iris$Species != "setosa", ]
+not_setosa$Species <- as.character(not_setosa$Species)
+not_setosa$Species <- as.factor(not_setosa$Species)
+asd <- not_verginia[, 3:5]
+asd
+not_verginia_div_line <- make_div_line2(not_verginia[, 3:5], c(1,1), 0, 3, 0.01)
+names(not_setosa_div_line)
+not_setosa_div_line <- make_div_line2(not_setosa[, 3:5], c(1,1), 0, 3, 0.01)
+
+not_setosa_div_line <- not_setosa_div_line[order(not_setosa_div_line[,2]),]
+not_verginia_div_line <- not_verginia_div_line[order(not_verginia_div_line[,2]),]
+
+
+names(not_setosa_div_line) <- stdmemes
+names(not_verginia_div_line) <- stdmemes
+
+
+z <- rbind.data.frame(not_setosa_div_line, not_setosa_div_line[1,])
+
+z
+zz <- rbind.data.frame(not_verginia_div_line, not_verginia_div_line)
+not_setosa_div_line[1,]
+
+z <- make_div_line3(not_verginia[3:5], c(1,1))
+z
+
+zz <- data.frame(xx = z[1]/(-z[2]),yy = z[3]/(-z[2]))
+zz
+
+
+m <- make_div_line3(not_setosa[3:5], c(1,1))
+mm <- data.frame(xx = m[1]/(-m[2]), yy = m[3]/(-m[2]))
+
