@@ -607,7 +607,7 @@ naive_bias <- function(x, y, tlyambda = NA, tmu = NA, ttsigma = NA, taprior = NA
 ![ХДЕ?????](PlugIn/formul.png?raw=true "Optional Title").
 Полученные оценки подставим в оптимальный байесовский классификатор и получим PlugIn алгоритм. Собственоо поэтому он и называется "подстановочным".
 
-![ХДЕ?????](PlugIn/ae37300c-4455-4b98-85c2-245c6de28c35.png?raw=true "Optional Title")
+![ХДЕ?????](PlugIn/mp.png?raw=true "Optional Title")
 ![ХДЕ?????](PlugIn/8e06689c-1842-4357-8003-abab9fa2caa7.png?raw=true "Optional Title")
 
 ![ХДЕ?????](PlugIn/div_line_eli[s.png?raw=true "Optional Title")
