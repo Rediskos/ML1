@@ -1,3 +1,5 @@
+
+
 calc_prob_rasp <- function(x, mu, E) {
   #x - точка как вектор
   #mu - мат ожидание как вектор
@@ -185,7 +187,8 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
   return(ans)  
 }
 
-make_div_line3 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
+make_div_line3 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01,
+                           taprior = NA) {
   #x - датафрейм точек уже классифицированых
   #lyambdas - вектор важностей классов
   
@@ -202,6 +205,9 @@ make_div_line3 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
   # mu[,] <- z[, c(1:xc-1)]
   # mu[, c(1:xc-1)] <- sapply(mu[,c(1:xc-1)], as.numeric)
   aprior <- aprior_prob(x)
+  if(is.na(taprior) == FALSE) {
+    aprior <- taprior
+  }
   solvs_E <- data.frame()
   dets_E <- data.frame()
   
@@ -399,6 +405,7 @@ draw_map <- function(xx, yy, zz, mm) {
     labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера") 
     
 }
+
 # 
 # tmap$tig <- sigmoid(as.numeric(tmap$tig))
 # tmap$tig <- as.numeric(tmap$tig)
@@ -428,14 +435,30 @@ sigmoid = function(x) {
 # options(device = "windows")
 # dev.cur()
 # draw_map(aa, iris)
-# 
-aa <- make_map(iris, 3:4)
+# z <- make_div_line3(not_verginia[3:5], c(1,1), taprior = rem_aprior)
+
+zz <- data.frame(xx = z[1]/(-z[2]),yy = z[3]/(-z[2]))
+zz
+
+
+m <- make_div_line3(not_setosa[3:5], c(1,1), taprior = rem_aprior)
+mm <- data.frame(xx = m[1]/(-m[2]), yy = m[3]/(-m[2]))
+
+rem_aprior <- calc_aprior_prob(iris)
+rem_aprior
+
+aa <- make_map(not_verginia, 3:4)
 aa[1,]
+cc <- aa
+cc[1,]
+cc$tig <- as.numeric(aa$tig)
 bb <- aa
 bb[1,]
 bb$tig <- as.numeric(aa$tig)
 # bb$tig <- sigmoid(bb$tig)
 # names(bb)
+zz
+mm
 draw_map(bb, iris, zz, mm)
 # levels(iris$Species)
 not_verginia <- iris[iris$Species != "virginica",]
@@ -451,18 +474,18 @@ not_verginia_div_line <- make_div_line2(not_verginia[, 3:5], c(1,1), 0, 3, 0.01)
 names(not_setosa_div_line)
 not_setosa_div_line <- make_div_line2(not_setosa[, 3:5], c(1,1), 0, 3, 0.01)
 
-z <- make_div_line3(not_verginia[3:5], c(1,1))
-z
+lft
 
-zz <- data.frame(xx = z[1]/(-z[2]),yy = z[3]/(-z[2]))
-zz
+lft
 
-
-m <- make_div_line3(not_setosa[3:5], c(1,1))
-mm <- data.frame(xx = m[1]/(-m[2]), yy = m[3]/(-m[2]))
-
-ggplot() +
-  scale_x_continuous(name="x", limits=c(-5,5)) +
-  scale_y_continuous(name="y", limits=c(-5,5)) +
-  # scale_linetype(name="s") +
-  geom_abline(data = zz, mapping = aes(slope = xx, intercept = yy))
+c <- make_div_line3(lft, c(1,1))
+cc <- data.frame(xx = c[1]/(-c[2]), yy = c[3]/(-c[2]))
+cc
+str(bb)
+str(lft)
+ggplot(data = lft, aes(x = first, y = second)) +
+  geom_point(shape = 22) +
+  # # scale_linetype(name="s") +
+  geom_abline(data = cc, mapping = aes(slope = xx, intercept = yy))
+  scale_x_continuous( limits=c(-10,10)) +
+  scale_y_continuous(limits=c(-10,10))
