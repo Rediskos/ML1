@@ -742,7 +742,6 @@ LDF строит разделяющую пряму между классами.
 ![ХДЕ?????](LDF/div_line_1.png?raw=true "Optional Title")
 ![ХДЕ?????](LDF/div_line_2.png?raw=true "Optional Title")
 ![ХДЕ?????](LDF/div_line_3.png?raw=true "Optional Title")
-![ХДЕ?????](LDF/ldf_map.png?raw=true "Optional Title")
 
 ```R
 #основная функция LDF алгоритма
