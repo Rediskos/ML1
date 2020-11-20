@@ -233,7 +233,8 @@ solv_linear <- function(b,c, ind) {
 }
 
 
-make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
+make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01,
+                           taprior = NA, tE = NA) {
   #x - датафрейм точек уже классифицированых
   #lyambdas - вектор важностей классов
   
@@ -250,6 +251,9 @@ make_div_line2 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01) {
   solvs_E <- data.frame()
   dets_E <- data.frame()
   
+  if(is.na(taprior) == FALSE) {
+    aprior <- taprior
+  }
   
   point <- data.frame()
   
@@ -476,7 +480,10 @@ draw_map <- function(xx, yy, div_line1, div_line2) {
     labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера") 
   }
 
-draw_map(bb, iris, z, zz)
+not_versicolor$Species <- as.factor(not_versicolor$Species)
+k <- make_div_line2(not_versicolor[,3:5], c(1,1))
+
+draw_map(bb, iris, ntsdl, ntvdl)
 
 # x <- iris[1,]
 # 
@@ -509,7 +516,7 @@ bb$tig <- as.numeric(aa$tig)
 
 tmap_div_line <- make_div_line2(iri)
 
-draw_map(bb, iris, not_setosa_div_line, not_verginia_div_line)
+draw_map(bb, iris, ntsdl, ntvdl)
 # levels(iris$Species)
 not_verginia <- iris[iris$Species != "virginica",]
 
@@ -520,13 +527,19 @@ not_setosa$Species <- as.character(not_setosa$Species)
 not_setosa$Species <- as.factor(not_setosa$Species)
 asd <- not_verginia[, 3:5]
 asd
-not_verginia_div_line <- make_div_line2(not_verginia[, 3:5], c(1,1), 0, 3, 0.01)
+not_verginia_div_line <- make_div_line2(not_verginia[, 3:5], c(1,1), 0, 3, 0.001)
 names(not_setosa_div_line)
-not_setosa_div_line <- make_div_line2(not_setosa[, 3:5], c(1,1), 0, 3, 0.01)
+not_setosa_div_line <- make_div_line2(not_setosa[, 3:5], c(1,1), 0, 3, 0.001)
+
+not_versicolor <- iris[iris$Species != "versicolor",]
+
+str(iris)
 
 not_setosa_div_line <- not_setosa_div_line[order(not_setosa_div_line[,2]),]
 not_verginia_div_line <- not_verginia_div_line[order(not_verginia_div_line[,2]),]
 
+ntsdl <- rbind.data.frame(not_setosa_div_line, not_setosa_div_line[1,])
+ntvdl <- rbind.data.frame(not_verginia_div_line, not_verginia_div_line[1,])
 
 names(not_setosa_div_line) <- stdmemes
 names(not_verginia_div_line) <- stdmemes
@@ -547,4 +560,4 @@ zz
 
 m <- make_div_line3(not_setosa[3:5], c(1,1))
 mm <- data.frame(xx = m[1]/(-m[2]), yy = m[3]/(-m[2]))
-
+not_versicolor
