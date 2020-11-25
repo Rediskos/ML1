@@ -18,15 +18,31 @@ ADALINE_loss_func_deriv <- function(w, x, y) {
 }
 
 ADALINE_draw_line <- function(x, w) {
+  p <- ggplot(x, aes(x = one, y = two, colour = thri)) + geom_point(size = 4) +
+    scale_color_manual(values = c("red", "green"), name = "Класс")
   
+  l <- dim(w)[1]
+  tmp <- 0
+  for(i in 1:l) {
+    tmp <- -w[i, 2] / w[i, 1]
+    p <- p + geom_abline(intercept = 0, slope = tmp)
+  }
+  
+  p <- p + geom_abline(intercept = 0, slope = tmp, colour = "red", size = 2)
+  p <- p + ylim(-2,4) + labs(title = "ADALINE")
+  print(p)
 }
 
+ttmp <- for_ADALINE
+ttmp$thri <- as.factor(ttmp$thri)
 
-fx <- runif(50,-2,-1)
-fy <- runif(50,1,2)
+ADALINE_draw_line(ttmp,ADALINE_SGD)
 
-sx <- runif(50, 1,2)
-sy <- runif(50, 3,4)
+fx <- runif(50,-1,-0.1)
+fy <- runif(50,0,3)
+
+sx <- runif(50, 0.1,1)
+sy <- runif(50, 0,3)
 
 fclass <- cbind.data.frame(fx, fy, 1)
 sclass <- cbind.data.frame(sx, sy, -1)
@@ -43,6 +59,9 @@ for_ADALINE[1,]
 ggplot(for_ADALINE, aes(x = one, y = two, fill = thri)) +
   geom_point()
 
-ADALINE_SGD <- SGD(for_ADALINE, 0.1, 0.8, ADALINE_loss_func,
+ADALINE_SGD <- SGD(for_ADALINE, learn_temp = 1, lyambda = 0.5, ADALINE_loss_func,
                    ADALINE_loss_func_deriv, return_all_weights =  TRUE,
-                   reg_tau = 10)
+                   reg_tau = 0.005, steps = 300)
+ADALINE_SGD <- ADALINE_SGD[order(-ADALINE_SGD$loss), ]
+ADALINE_SGD
+ADALINE_draw_line(ttmp,ADALINE_SGD)

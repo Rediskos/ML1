@@ -447,7 +447,7 @@ make_map <- function(y, params, classifier = PlugIn) {
   return(tmps)
 }
 
-draw_map <- function(xx, yy, div_line1, div_line2) {
+draw_map <- function(xx, yy, div_line1, div_line2, div_line3) {
   
   xc <- dim(xx)[2]
   clas <- levels(xx[, xc])
@@ -475,15 +475,33 @@ draw_map <- function(xx, yy, div_line1, div_line2) {
     # scale_color_manual(values = c("red", "green", "blue"), name = "Выборка")++
     geom_path(data = div_line1, aes(x = one, y = thri)) +
     geom_path(data = div_line2, aes(x = one, y = thri)) +
+    geom_path(data = div_line3, aes(x = one, y = thri)) +
     xlim(0, 7) +
     ylim(0, 2.6) +
     labs(title = "Карта классификации PlugIn алгоритма: ирисы Фишера") 
   }
 
+not_versicolor$Species <- as.character(not_versicolor$Species)
 not_versicolor$Species <- as.factor(not_versicolor$Species)
-k <- make_div_line2(not_versicolor[,3:5], c(1,1))
+k
+k <- make_div_line2(not_versicolor[,3:5], c(1,1), step = 0.001)
+z <- make_div_line2(not_setosa[,3:5], c(1,1), tfrom = 0, tto = 2, step = 0.001)
+m <- make_div_line2(not_verginia[,3:5], c(1,1),tfrom = 0, tto = 1.5,  step = 0.0001)
+names(k) <- stdmemes
+names(z) <- stdmemes
+names(m) <- stdmemes
 
-draw_map(bb, iris, ntsdl, ntvdl)
+kk <- k[order(k$two),]
+zz <- z[order(z$two),]
+mm <- m[order(m$two),]
+
+kk <- rbind.data.frame(kk, kk[1,])
+zz <- rbind.data.frame(zz, zz[1,])
+mm <- rbind.data.frame(mm, mm[1,])
+
+
+
+draw_map(bb, iris, kk, zz, mm)
 
 # x <- iris[1,]
 # 

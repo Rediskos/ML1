@@ -1,8 +1,20 @@
-
+normilize_X <- function(x) {
+  m <- dim(x)[2]
+  
+  for(i in 1:m) {
+    minv <- min(x[,i])
+    maxv <- max(x[,i])
+    
+    x[,i] <- (x[,i] - minv) / (minv - maxv)
+  }
+  
+  return(x)
+}
 
 #функция стохастического градиентного спуска
 SGD <- function(xl, learn_temp, lyambda, los_func, los_func_deriv,
-                return_all_weights = FALSE, reg_tau = 0.5, steps = 1000) {
+                return_all_weights = FALSE, reg_tau = 0.5, steps = 1000,
+                normIt = TRUE) {
   #xl - датафрейм векторов выборки
   #learn_temp - темп обучения
   #lyambda - параметр сглаживания
@@ -14,6 +26,10 @@ SGD <- function(xl, learn_temp, lyambda, los_func, los_func_deriv,
   nms <- names(xl[, 1:ml-1])
   x <- as.matrix(xl[, 1:ml-1], ncol = ml-1) #матрица параметров
   y <- as.matrix(xl[, ml], ncol = 1) #матрица ответов
+  
+  if(normIt == TRUE) {
+    x <- normilize_X(x)
+  }
   
   m <- dim(x)[2]
   w <- runif(m, -1/(2*l), 1/(2*l)) #начальные веса
@@ -37,14 +53,13 @@ SGD <- function(xl, learn_temp, lyambda, los_func, los_func_deriv,
   
   response <- wt
   
-  while (steps > 0) {
+  while (Q < Q_past && steps > 0) {
     
     
     rand_indx <- sample(1:l, 1)
     xi <- x[rand_indx,]
     yi <- y[rand_indx,]
     
-    res_from_los <- los_func(w, xi, yi) + reg_tau / 2 * t(w) %*% w
     
     res_from_los_deriv <- los_func_deriv(w, xi, yi)
     
@@ -52,6 +67,7 @@ SGD <- function(xl, learn_temp, lyambda, los_func, los_func_deriv,
     
     w <- w*(1 - learn_temp*reg_tau) - learn_temp * for_weight_step
     
+    res_from_los <- los_func(w, xi, yi) + reg_tau / 2 * t(w) %*% w
     
     Q_past <- Q
     Q <- (1 - lyambda) * Q + lyambda * res_from_los
@@ -66,7 +82,7 @@ SGD <- function(xl, learn_temp, lyambda, los_func, los_func_deriv,
     
     
     if(learn_temp > 1e-4) {
-      learn_temp <- learn_temp * 0.5
+      learn_temp <- learn_temp * 0.8
     }
     
     tabs <- abs(Q_past - Q)

@@ -59,7 +59,7 @@ calc_sigma <- function (features) {
       #мат ожидание в квадрате
       double_mu <- (sum(tmp_slice[, j]) / m) ^ 2
       #мат ожидание от квадрата
-      mu_from_double <- (sum(tmp_slice[, j] ^ 2) / m)
+      mu_from_double <- (sum(tmp_slice[, j] ^ 2)  / m)
       
       disp_for_one <- cbind(disp_for_one, sqrt(mu_from_double - double_mu))
     }
@@ -295,7 +295,7 @@ make_map(colors)
 aa <- make_map(colors, lyambdas = c(1,2,3))
 
 aa
-
+aa
 bb <- aa
 bb[1,]
 bb$tig <- as.numeric(aa$tig)

@@ -188,7 +188,7 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
 }
 
 make_div_line3 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01,
-                           taprior = NA) {
+                           taprior = NA, tE = NA) {
   #x - датафрейм точек уже классифицированых
   #lyambdas - вектор важностей классов
   
@@ -217,6 +217,9 @@ make_div_line3 <- function(x, lyambdas, tfrom = -4, tto = 4, step = 0.01,
   l <- dim(x)[1]
   
   E <- calc_cov_matr(x, mu, l) #посчитать ковариационную матрицу
+  if(is.na(tE) == FALSE) {
+    E <- tE
+  }
   
   s_E <- solve(E)
   
@@ -436,16 +439,24 @@ sigmoid = function(x) {
 # dev.cur()
 # draw_map(aa, iris)
 # z <- make_div_line3(not_verginia[3:5], c(1,1), taprior = rem_aprior)
-
+z <- make_div_line3(not_verginia[,3:5],c(1,1), taprior = rem_aprior,
+                    tE = rem_cov_m)
 zz <- data.frame(xx = z[1]/(-z[2]),yy = z[3]/(-z[2]))
 zz
 
 
-m <- make_div_line3(not_setosa[3:5], c(1,1), taprior = rem_aprior)
+m <- make_div_line3(not_setosa[,3:5], c(1,1), taprior = rem_aprior,
+                    tE = rem_cov_m)
 mm <- data.frame(xx = m[1]/(-m[2]), yy = m[3]/(-m[2]))
-
+mm
 rem_aprior <- calc_aprior_prob(iris)
 rem_aprior
+
+rem_mu <- calc_mu(iris[3:5])
+rem_mu
+
+rem_cov_m <- calc_cov_matr(iris[, 3:5], rem_mu, 150)
+
 
 aa <- make_map(not_verginia, 3:4)
 aa[1,]
@@ -459,7 +470,7 @@ bb$tig <- as.numeric(aa$tig)
 # names(bb)
 zz
 mm
-draw_map(bb, iris, zz, mm)
+draw_map(cc, iris, zz, mm)
 # levels(iris$Species)
 not_verginia <- iris[iris$Species != "virginica",]
 
@@ -480,7 +491,8 @@ lft
 
 c <- make_div_line3(lft, c(1,1))
 cc <- data.frame(xx = c[1]/(-c[2]), yy = c[3]/(-c[2]))
-cc
+cc <- bb
+cc$tig <- sigmoid(bb$tig)
 str(bb)
 str(lft)
 ggplot(data = lft, aes(x = first, y = second)) +
