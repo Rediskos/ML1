@@ -579,3 +579,6 @@ zz
 m <- make_div_line3(not_setosa[3:5], c(1,1))
 mm <- data.frame(xx = m[1]/(-m[2]), yy = m[3]/(-m[2]))
 not_versicolor
+seq(from = 1, by = 3, length.out = dim(ADALINE_SGD) / 3)
+
+as.numeric(levels(for_ADALINE$thri)[for_ADALINE$thri])

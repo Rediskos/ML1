@@ -474,6 +474,8 @@ draw_map(cc, iris, zz, mm)
 # levels(iris$Species)
 not_verginia <- iris[iris$Species != "virginica",]
 
+str(not_verginia)
+
 not_verginia$Species <- as.character(not_verginia$Species)
 not_verginia$Species <- as.factor(not_verginia$Species)
 not_setosa <- iris[iris$Species != "setosa", ]
