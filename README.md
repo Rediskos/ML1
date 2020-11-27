@@ -15,7 +15,7 @@
     3. [PlugIn алгоритм](#PlugIn-алгоритм)
     4. [LDF алгоритм](#LDF-алгоритм)
 2. [Линейные алгоритмы классификации](#Линейные-алгоритмы-классификации)
-    1. [ADALINE, Правило Хебба](#ADALINE,-Правило-Хебба)
+    1. [ADALINE и Правило Хебба](#ADALINE-и-Правило-Хебба)
     2. [Метод опорных векторов](#Метод-опорных-векторов)
     
 ## Метрические алгоритмы
@@ -836,7 +836,7 @@ LDF <- function(x, y, tlyambda = NA, tmu = NA, taprior = NA) {
 
 ## Линейные алгоритмы классификации
 
-### ADALINE, Правило Хебба
+### ADALINE и Правило-Хебба
 
 #### Стохастический градиентный спуск
 И так имеем: несколько классов, обучающую выборку *вектор - ответ*. Будем искать вектор весов такой, при котором мы достигнем *минимизации апроксимированного эмпирического риска*.
@@ -870,7 +870,8 @@ normilize_X <- function(x) {
 }
 
 #функция стохастического градиентного спуска
-SGD <- function(xl, learn_temp, lyambda, los_func, los_func_deriv,
+SGD <- function(xl, learn_temp_func = def_leanr_rate_calc,
+                lyambda, los_func, los_func_deriv,
                 return_all_weights = FALSE, reg_tau = 0.5, steps = 1000,
                 normIt = TRUE) {
   #xl - датафрейм векторов выборки
@@ -883,16 +884,116 @@ SGD <- function(xl, learn_temp, lyambda, los_func, los_func_deriv,
   #steps - максимальное колличество шагов алгоритма
   #normIt - TRUE, если требуется нормализовать признаки
   
-  #<...> 
+  l <- dim(xl)[1] #размер выборки
+  
+  ml <- dim(xl)[2] #сколько типов признаков
+  nms <- c("shift", names( xl[, 1:ml-1]))#имена для data.frame ответа
+  
+  x <- as.matrix(xl[, 1:ml-1], ncol = ml-1) #матрица параметров
+
+  y <- xl[, ml] #матрица ответов
+  ty <- levels(y)[y]
+  ty <- as.numeric(ty)
+  y <- matrix(ty, ncol = 1)
+  
+  
+  #нормировать признаки если нужно
+  if(normIt == TRUE) {
+    x <- normilize_X(x)
+  }
+  
+  add_x <- matrix(rep(1, l), ncol = 1)#столбец для смещений
+  x <- cbind(add_x, x)#добавить столбец смещений
+  
+  m <- dim(x)[2]#сколько признаков
+  w <- runif(m , -1/(2*l), 1/(2*l)) #начальные веса
+  names(w) <- nms
+  
+  Q <- 0 #функционал ошибки
+  
+  #начальная ошибка
+  for(i in 1:l) {
+    xi <- x[i,]
+    yi <- y[i,]
+    
+    los_func_res <- los_func(w, xi, yi)
+    
+    Q <- Q + los_func_res
+  }
+  
+  Q_past <- Q + 10000#значение ошибки с предыдущего шага.
+  
+  wt <- c(w, Q)#веса вместе с ошибкой на них
+  
+  response <- wt #возвращаемый из функции ответ
+  tabs <- 1 #разница между текущим и предыдущим значениями эмпирического риска
+  step = 1 <- #шаг алгоритма
+  for_learn_temp = 1
+  
+  yi = 0#какой класс рассматриваемыз наков
+  
+  while ((Q > 0.1 || tabs > 0.1) && step <= steps) {
+    
+    #<-->блок выбора случайного признака такого, чтобы его клас не совпадал
+    #с предыдущим выбранным классом
+    kkk <- 30
+    rand_indx <- sample(1:l, 1)
+    txi <- x[rand_indx,]
+    tyi <- y[rand_indx,]
+    
+    while(tyi == yi && kkk > 0) {
+      
+      rand_indx <- sample(1:l, 1)
+      txi <- x[rand_indx,]
+      tyi <- y[rand_indx,]
+      
+      kkk <- kkk - 1
+    }
+    
+    xi <- txi #случайные признаки
+    yi <- tyi #случайный ответ
+    
+    
+    learn_temp <- learn_temp_func(xi, for_learn_temp)#высчитать темп обучения
+    
+    res_from_los_deriv <- los_func_deriv(w, xi, yi)
+    
+    for_weight_step <- res_from_los_deriv
+    
+    res_from_los <- los_func(w, xi, yi) + reg_tau / 2 * (norm_vec(w) ^ 2)
+    
+    Q_past <- Q
+    Q <- (1 - lyambda) * Q + lyambda * res_from_los
+    
+    wt <- c(w, Q)
+    
+    if(return_all_weights == TRUE) {
+      response <- rbind.data.frame(response, wt)
+    } else {
+      response <- wt
+    }
+   
+    tabs <- abs(Q_past - Q)
+    
+    #если потеря на шаге больше единицы, тогда ускорить темп обучения, иначе замедлить.
+    if(res_from_los - reg_tau / 2 * (norm_vec(w) ^ 2) > 1 && for_learn_temp > 1) {
+      for_learn_temp <- for_learn_temp - 1
+      w <- w*(1 - learn_temp*reg_tau) - learn_temp * for_weight_step
+    } else {
+      for_learn_temp <- for_learn_temp + 1
+    } 
+    
+    step <- step + 1
+  }
   
   names(response) <- c(nms, "loss")
-  response <- response[order(-response$loss), ]
   return(response)
 }
 ```
 
 #### ADALINE
 
+<img src="ADALINE/gif.gif" width = 500>
 ### Метод опорных векторов
 
 Смысл метода заключается в посторении особой разделяющей гиперплоскости. В общем случае, если выборка линейно разделима, то таких разделяющих плотностей будет множество. Идея метода в том, чтобы разумно распорядится этой свободой: выбрать плоскоскость которая максимально удалена от всех точек выборки - такое требование появилось из соображений, что большой "зазор" будет давать более устойчевые решения.
