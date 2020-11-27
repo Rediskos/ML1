@@ -998,9 +998,33 @@ SGD <- function(xl, learn_temp_func = def_leanr_rate_calc,
 
 Пример на синтетических данных:
 
-<img src="ADALINE/gif.gif" width = 400> 
+<img src="ADALINE/gif.gif" width = 600> 
 
-<img src="ADALINE/loss_graph.png" width = 400> 
+<img src="ADALINE/loss_graph.png" width = 1000> 
+
+```R
+ADALINE_learn_temp_calc <- function(x, t) {
+  t_x <- norm_vec(x)
+  response <-  t_x
+  return(response)
+}
+
+ADALINE_loss_func <- function(w, x, y) {
+  t_x <- t(x)
+  t_w <- t(w)
+  for_ans <- t_w %*% x * y 
+  ans <- (for_ans - 1)^2
+  return(ans)
+}
+
+ADALINE_loss_func_deriv <- function(w, x, y) {
+  t_x <- t(x)
+  t_w <- t(w)
+  for_ans <- t_w %*% x - 1
+  ans <- 2 * for_ans * y * x
+  return(ans)
+}
+```
 
 ### Метод опорных векторов
 
