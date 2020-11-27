@@ -993,6 +993,8 @@ SGD <- function(xl, learn_temp_func = def_leanr_rate_calc,
 }
 ```
 
+[:arrow_up:Оглавление](#Оглавление)
+
 #### ADALINE
 Использует ***SGD*** подставляя туда свою функцию потерь:
 
@@ -1027,6 +1029,8 @@ ADALINE_loss_func_deriv <- function(w, x, y) {
   return(ans)
 }
 ```
+
+[:arrow_up:Оглавление](#Оглавление)
 
 ### Метод опорных векторов
 
