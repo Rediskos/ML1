@@ -304,7 +304,7 @@ SGD <- function(xl, learn_temp_func = def_leanr_rate_calc,
     
     w2 <- w
     
-    SGD_draw_weights(xz, w1, w2, step, xi)
+    # SGD_draw_weights(xz, w1, w2, step, xi)
     step <- step + 1
   }
   

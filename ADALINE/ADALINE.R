@@ -1,6 +1,5 @@
 source("E:/.Учёба/СЕЙЧАС/..Системы и методы принятия решений/pr/ML1/SGD/SGD.R")
 library(ggplot2)
-
 norm_vec <- function(x) sqrt(sum(x^2))
 
 ADALINE_learn_temp_calc <- function(x, t) {
@@ -26,6 +25,8 @@ ADALINE_loss_func_deriv <- function(w, x, y) {
 }
 
 ADALINE_draw_line <- function(x, w) {
+  #x - data.frame - выборка - три столбца
+  #w - data.frame - веса - три стоблца
   p <- ggplot(x, aes(x = x[,1], y = x[,2], fill = x[,3])) + 
     geom_point(size = 4, stroke = 1, shape = 21)
   
@@ -42,7 +43,7 @@ ADALINE_draw_line <- function(x, w) {
   p <- p + geom_abline(intercept = intercept_tmp,
                        slope = slope_tmp, colour = "blue", size = 3) +
     scale_fill_manual(values = c("yellow", "red"), name = "Класс")
-  p <- p + ylim(0,1) + xlim(0,1) + labs(title = "SGD, функция потерь ADALINE")
+  p <- p + ylim(0,1) + xlim(0,1) + labs(title = "SGD, Правило Хэбба")
   print(p)
 }
 
@@ -55,7 +56,7 @@ ADALINE_draw_los_change_line <- function(w) {
   
   ggplot(tw, aes(x = tw[,1], y = tw[,4])) + geom_path() +
     labs(x = "SGD шаг", y = "Эмпирический риск", 
-         title = "SGD, функция потерь используя Правило Хэбба", 
+         title = "SGD, функция потерь используя ADALINE", 
          subtitle = "График изменения эмпирического риска во время обучения")
 }
 ADALINE_draw_line(ttmp,ADALINE_SGD)
