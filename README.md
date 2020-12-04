@@ -18,6 +18,7 @@
     1. [ADALINE и Правило Хебба](#ADALINE-и-Правило-Хебба)
         1.[Стохастический градиентный спуск](#Стохастический-градиентный-спуск)
         2.[ADALINE](#ADALINE)
+        3.[Правило Хэбба](#Правило-Хэбба)
     2. [Метод опорных векторов](#Метод-опорных-векторов)
     
 ## Метрические алгоритмы
@@ -1002,7 +1003,9 @@ SGD <- function(xl, learn_temp_func = def_leanr_rate_calc,
 
 Пример на синтетических данных:
 
-<img src="ADALINE/gif.gif" width = 600> 
+<img src="ADALINE/gif.gif" width = 1000> 
+
+<img src="ADALINE/ADALINE.png" width = 1000> 
 
 <img src="ADALINE/loss_graph.png" width = 1000> 
 
@@ -1031,6 +1034,59 @@ ADALINE_loss_func_deriv <- function(w, x, y) {
 ```
 
 [:arrow_up:Оглавление](#Оглавление)
+
+#### Правило Хэбба
+Если выбрать следующую кусочнолинейную функцию потерь
+
+<img src="Hebb/loss_f.png" width = 300> 
+
+Тогда шаг *SGD* можно дополнить до правила Хэбба
+
+<img src="Hebb/hebb_rule.png" width = 600> 
+
+Пример на синтетических данных:
+
+<img src="Hebb/gif.gif" width = 1000> 
+
+<img src="Hebb/heb_lines.png" width = 1000> 
+
+<img src="Hebb/график.png" width = 1000> 
+
+```R
+#Кусочно-линейная функция потерь
+HEBB_LOSS_FUNC <- function(w, x, y) {
+  t_x <- t(x)
+  t_w <- t(w)
+  for_ans <- t_w %*% x * y 
+  ans <- for_ans
+  if(ans > 0) {
+    ans <- 0
+  } else {
+    ans <- -ans
+  }
+  return(ans)
+}
+
+#Правило хэбба(производная функции потерь)
+HEBB_RULE <- function(w, x, y) {
+  t_w <- t(w)
+  for_ans <- x * y
+  for_span <- t_w %*% x
+  span <- for_span * y
+  
+  #Если отступ меньше нуля, то изменить веса
+  if(span < 0) {
+    #умножить ответ на -1, чтобы шаг градиентного спуска
+    #соответствовал правилу Хэбба
+    ans <- -for_ans
+    return(ans) 
+  } else {
+    return(0)
+  }
+}
+```
+[:arrow_up:Оглавление](#Оглавление)
+
 
 ### Метод опорных векторов
 
