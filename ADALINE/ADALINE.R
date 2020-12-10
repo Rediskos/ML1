@@ -56,7 +56,7 @@ ADALINE_draw_los_change_line <- function(w) {
   
   ggplot(tw, aes(x = tw[,1], y = tw[,4])) + geom_path() +
     labs(x = "SGD шаг", y = "Эмпирический риск", 
-         title = "SGD, функция потерь используя ADALINE", 
+         title = "SGD, функция потерь используя Логическую Регрессию", 
          subtitle = "График изменения эмпирического риска во время обучения")
 }
 ADALINE_draw_line(ttmp,ADALINE_SGD)

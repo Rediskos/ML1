@@ -112,7 +112,7 @@ SGD_draw_weights <- function(xl, w1, w2, step, xi) {
                 size = 2)
  p <- p + my.scales
  
- file_path = "E:/.Учёба/СЕЙЧАС/..Системы и методы принятия решений/pr/ML1/ADALINE/aaa"
+ file_path = "E:/.Учёба/СЕЙЧАС/..Системы и методы принятия решений/pr/ML1/LogReg/aaa"
  file_name <- paste(step, "png", sep = ".")
  # print(p)
  ggsave(filename = file_name, path = file_path, plot = p)
@@ -304,7 +304,7 @@ SGD <- function(xl, learn_temp_func = def_leanr_rate_calc,
     
     w2 <- w
     
-    # SGD_draw_weights(xz, w1, w2, step, xi)
+    SGD_draw_weights(xz, w1, w2, step, xi)
     step <- step + 1
   }
   
