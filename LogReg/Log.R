@@ -28,10 +28,10 @@ LOG_REG_SGD <- SGD(for_ADALINE,
                 return_all_weights =  TRUE,
                 reg_tau = 0.5, steps = 200)
 
-waADALINE_draw_los_change_line(HEBB_SGD)
+ADALINE_draw_los_change_line(LOG_REG_SGD)
 
 norm_hebb <- for_ADALINE
 norm_hebb[1,]
 norm_hebb[, 1:2] <- normilize_X(norm_hebb[, 1:2])
 
-ADALINE_draw_line(norm_hebb, HEBB_SGD)
+ADALINE_draw_line(norm_hebb, LOG_REG_SGD)

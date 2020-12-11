@@ -43,7 +43,7 @@ ADALINE_draw_line <- function(x, w) {
   p <- p + geom_abline(intercept = intercept_tmp,
                        slope = slope_tmp, colour = "blue", size = 3) +
     scale_fill_manual(values = c("yellow", "red"), name = "Класс")
-  p <- p + ylim(0,1) + xlim(0,1) + labs(title = "SGD, Правило Хэбба")
+  p <- p + ylim(0,1) + xlim(0,1) + labs(title = "SGD, Логическая Регрессия")
   print(p)
 }
 
