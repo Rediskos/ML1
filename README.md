@@ -19,7 +19,8 @@
         1.[Стохастический градиентный спуск](#Стохастический-градиентный-спуск)
         2.[ADALINE](#ADALINE)
         3.[Правило Хэбба](#Правило-Хэбба)
-    2. [Метод опорных векторов](#Метод-опорных-векторов)
+    2. [Логистическая регрессия](#Логистическая-регрессия)
+    3. [Метод опорных векторов](#Метод-опорных-векторов)
     
 ## Метрические алгоритмы
 [:arrow_up:Оглавление](#Оглавление)
@@ -1087,6 +1088,52 @@ HEBB_RULE <- function(w, x, y) {
 ```
 [:arrow_up:Оглавление](#Оглавление)
 
+### Логистическая регрессия
+
+Бдуем применять следующуя функцию потерь
+
+<img src="LogReg/loss_pic.png" width = 300> 
+
+Тогда шаг градиентного спуская примет вид
+
+
+<img src="LogReg/loss_step.png" width = 300> 
+
+```R
+sigmoida <- function(x) {
+  return(1 / (1 + exp(-x)))
+}
+
+LOG_REG_LOSS_FUNC <- function(w, x, y) {
+  t_w <- t(w)
+  span <- t_w %*% x * y
+  exp_for_log <- exp(-span)
+  ans <- log2(1 + exp_for_log)
+  return(ans)
+}
+
+LOG_RES_LOSS_FUNC_DERIV <- function(w, x, y) {
+  t_w <- t(w)
+  span <- t_w %*% x * y
+  sigm_resp <- sigmoida(-span)
+  response <- x * y * sigm_resp
+  return(-response)
+}
+```
+
+Пример на синтетических данных:
+
+
+<img src="LogReg/gif.gif" width = 1000> 
+
+<img src="LogReg/func.png" width = 1000>
+
+
+<img src="LogReg/apos.png" width = 1000> 
+
+<img src="LogReg/loss_change.png" width = 1000> 
+
+[:arrow_up:Оглавление](#Оглавление)
 
 ### Метод опорных векторов
 
