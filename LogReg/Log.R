@@ -21,6 +21,62 @@ LOG_RES_LOSS_FUNC_DERIV <- function(w, x, y) {
   return(-response)
 }
 
+LOG_RES_MAKE_MAP <- function(w) {
+  l <- dim(w)[1]
+  wt <- as.matrix(w[l,1:3])
+  
+  t_wt <- t(wt)
+  
+  ans <- data.frame()
+  
+  for(i in 0:100) {
+    for(j in 0:100) {
+      x1 <- data.frame(
+        shift = 1,
+        xx = i/100,
+        yy = j/100
+      )
+      
+      x <- as.matrix(x1)
+      
+      
+      
+      for_simg <- wt %*% t(x) * -1 
+      y_minus <- sigmoida(for_simg)
+      
+      for_simg <- wt %*% t(x) * 1
+      y_plus <- sigmoid(for_simg)
+      
+      for_ans <- data.frame()
+      
+      if (y_minus > y_plus) {
+        for_ans <- cbind.data.frame(
+          x1, -1, y_minus
+        )
+      } else {
+        
+        for_ans <- cbind.data.frame(
+          x1, 1, y_plus
+        )
+      }
+      
+      # print(for_ans)
+      
+      
+      if(dim(ans)[1] > 0) {
+        names(for_ans) <- names(ans)
+        ans <- rbind.data.frame(ans, for_ans)
+      } else {
+        ans <- for_ans
+      }
+    }
+  }
+  
+  names(ans) <- c("shift", "xx", "yy", "class", "prob")
+  
+  return(ans)
+}
+
 ADALINE_draw_line1 <- function(x, w1, w2, w3) {
   #x - data.frame - выборка - три столбца
   #w - data.frame - веса - три стоблца
@@ -47,21 +103,23 @@ ADALINE_draw_line1 <- function(x, w1, w2, w3) {
   p <- p + geom_abline(intercept = intercept_tmp,
                        slope = slope_tmp, colour = "green", size = 3) + 
     scale_fill_manual(values = c("yellow", "red"), name = "Класс")
-  p <- p + ylim(0,1) + xlim(0,1) + labs(title = "SGD, ADALINE")
+  p <- p + ylim(0,1) + xlim(0,1) + labs(title = "SGD, Логистическая регрессия")
   print(p)
 }
 
-LOG_REG_SGD <- SGD(for_ADALINE,
-                lyambda = 0.1, 
-                los_func = LOG_REG_LOSS_FUNC,
-                los_func_deriv = LOG_RES_LOSS_FUNC_DERIV, 
-                return_all_weights =  TRUE,
-                reg_tau = 0.5, steps = 200)
+# LOG_REG_SGD <- SGD(for_ADALINE,
+#                 lyambda = 0.1, 
+#                 los_func = LOG_REG_LOSS_FUNC,
+#                 los_func_deriv = LOG_RES_LOSS_FUNC_DERIV, 
+#                 return_all_weights =  TRUE,
+#                 reg_tau = 0.5, steps = 200)
 
-ADALINE_draw_los_change_line(LOG_REG_SGD)
+# ADALINE_draw_los_change_line(LOG_REG_SGD)
 
-norm_hebb <- for_ADALINE
-norm_hebb[1,]
-norm_hebb[, 1:2] <- normilize_X(norm_hebb[, 1:2])
+# norm_hebb <- for_ADALINE
+# norm_hebb[1,]
+# norm_hebb[, 1:2] <- normilize_X(norm_hebb[, 1:2])
+# 
+# ADALINE_draw_line1(norm_hebb, HEBB_SGD, ADALINE_SGD, LOG_REG_SGD)
 
-ADALINE_draw_line1(norm_hebb, LOG_REG_SGD, ADALINE_SGD, HEBB_SGD)
+map.dots <- LOG_RES_MAKE_MAP(LOG_REG_SGD)
