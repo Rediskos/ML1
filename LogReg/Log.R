@@ -21,6 +21,36 @@ LOG_RES_LOSS_FUNC_DERIV <- function(w, x, y) {
   return(-response)
 }
 
+ADALINE_draw_line1 <- function(x, w1, w2, w3) {
+  #x - data.frame - выборка - три столбца
+  #w - data.frame - веса - три стоблца
+  p <- ggplot(x, aes(x = x[,1], y = x[,2], fill = x[,3])) + 
+    geom_point(size = 4, stroke = 1, shape = 21)
+  
+  l1 <- dim(w1)[1]
+  l2 <- dim(w2)[1]
+  l3 <- dim(w3)[1]
+  
+  
+  slope_tmp <- -w1[l1, 2] / w1[l1, 3]
+  intercept_tmp <- -w1[l1,1] / w1[l1, 3]
+  p <- p + geom_abline(intercept = intercept_tmp,
+                       slope = slope_tmp, colour = "blue", size = 3)
+  
+  slope_tmp <- -w2[l2, 2] / w2[l2, 3]
+  intercept_tmp <- -w2[l2,1] / w2[l2, 3]
+  p <- p + geom_abline(intercept = intercept_tmp,
+                       slope = slope_tmp, colour = "red", size = 3)
+  
+  slope_tmp <- -w3[l3, 2] / w3[l3, 3]
+  intercept_tmp <- -w3[l3,1] / w3[l3, 3]
+  p <- p + geom_abline(intercept = intercept_tmp,
+                       slope = slope_tmp, colour = "green", size = 3) + 
+    scale_fill_manual(values = c("yellow", "red"), name = "Класс")
+  p <- p + ylim(0,1) + xlim(0,1) + labs(title = "SGD, ADALINE")
+  print(p)
+}
+
 LOG_REG_SGD <- SGD(for_ADALINE,
                 lyambda = 0.1, 
                 los_func = LOG_REG_LOSS_FUNC,
@@ -34,4 +64,4 @@ norm_hebb <- for_ADALINE
 norm_hebb[1,]
 norm_hebb[, 1:2] <- normilize_X(norm_hebb[, 1:2])
 
-ADALINE_draw_line(norm_hebb, LOG_REG_SGD)
+ADALINE_draw_line1(norm_hebb, LOG_REG_SGD, ADALINE_SGD, HEBB_SGD)
